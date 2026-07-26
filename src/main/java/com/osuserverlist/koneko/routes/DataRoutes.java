@@ -3,6 +3,7 @@ package com.osuserverlist.koneko.routes;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,12 @@ public final class DataRoutes {
     /** How many best scores and sets a profile page shows at once. */
     private static final int PROFILE_PAGE_SIZE = 10;
 
+    /** How many rows one page of the ranking holds. */
+    private static final int LEADERBOARD_PAGE_SIZE = 50;
+
+    /** Sort orders the ranking accepts, anything else falls back to pp. */
+    private static final Set<String> LEADERBOARD_SORTS = Set.of("pp", "score", "acc", "plays");
+
     /** How many months the playcount graph covers. */
     private static final int PLAYCOUNT_MONTHS = 12;
 
@@ -49,6 +56,7 @@ public final class DataRoutes {
         config.routes.get("/data/home", DataRoutes::home);
         config.routes.get("/data/profile/{identifier}", DataRoutes::profile);
         config.routes.get("/data/scores/{identifier}", DataRoutes::scores);
+        config.routes.get("/data/leaderboard", DataRoutes::leaderboard);
         config.routes.get("/data/beatmaps", DataRoutes::beatmaps);
         config.routes.get("/data/beatmapset/{setId}", DataRoutes::beatmapset);
     }
@@ -100,15 +108,8 @@ public final class DataRoutes {
             body.put("stats", counters(quietly("/api/v1/get_server_stats", Map.of())));
         }
 
-        if (App.site.getHome().isShowLeaderboard()) {
-            int size = Math.max(1, Math.min(100, App.site.getHome().getLeaderboardSize()));
-
-            body.put("leaderboard", quietly("/api/v1/get_leaderboard", Map.of(
-                    "mode", String.valueOf(App.site.getHome().getLeaderboardMode()),
-                    "sort", "pp",
-                    "limit", String.valueOf(size))));
-        }
-
+        // The ranking lives on its own page now, so the front page only
+        // carries the counters.
         return body;
     }
 
@@ -176,6 +177,11 @@ public final class DataRoutes {
         // what makes a player's own beatmaps visible on the web.
         body.put("beatmapsets", quietly("/api/v1/get_player_beatmapsets",
                 withAll(who, Map.of("limit", String.valueOf(PROFILE_PAGE_SIZE)))));
+
+        // Medals are not per mode, so this is fetched without one. It rides
+        // along with the profile instead of being its own request: the whole
+        // catalogue is under a hundred rows.
+        body.put("achievements", quietly("/api/v1/get_player_achievements", who));
 
         return body;
     }
@@ -264,6 +270,55 @@ public final class DataRoutes {
         Map<String, Object> body = FastCache.get("beatmapset:" + setId, () -> {
             Map<String, Object> page = new LinkedHashMap<>();
             page.put("beatmapset", quietly("/api/v1/get_beatmapset", Map.of("id", setId)));
+
+            return page;
+        });
+
+        fastHeaders(ctx);
+        ctx.json(body);
+    }
+
+    /**
+     * The ranking page. Mode, country and sort order all come from the
+     * query string, so any filtered ranking is a link that can be shared.
+     *
+     * <p>The list of countries is handed out together with the rows: it is
+     * built from the players that actually exist, so the filter never
+     * offers a country with nobody in it.</p>
+     */
+    private static void leaderboard(Context ctx) {
+        int mode = intQuery(ctx, "mode", App.site.getHome().getLeaderboardMode());
+        int offset = Math.max(0, intQuery(ctx, "offset", 0));
+
+        String sort = trimmed(ctx.queryParam("sort")).toLowerCase(Locale.ROOT);
+        String country = trimmed(ctx.queryParam("country")).toLowerCase(Locale.ROOT);
+
+        if (!LEADERBOARD_SORTS.contains(sort)) {
+            sort = "pp";
+        }
+
+        // Anything that is not a plain two letter code means no filter.
+        if (!country.matches("[a-z]{2}")) {
+            country = "";
+        }
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("mode", String.valueOf(mode));
+        params.put("sort", sort);
+        params.put("offset", String.valueOf(offset));
+        params.put("limit", String.valueOf(LEADERBOARD_PAGE_SIZE));
+
+        if (!country.isEmpty()) {
+            params.put("country", country);
+        }
+
+        String key = "leaderboard:" + mode + ":" + sort + ":" + country + ":" + offset;
+
+        Map<String, Object> body = FastCache.get(key, () -> {
+            Map<String, Object> page = new LinkedHashMap<>();
+            page.put("leaderboard", quietly("/api/v1/get_leaderboard", params));
+            page.put("countries", quietly("/api/v1/get_countries",
+                    Map.of("mode", String.valueOf(mode))));
 
             return page;
         });

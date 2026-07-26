@@ -11,18 +11,20 @@
 
         <template v-else>
             <section class="mode-bar">
+                <div class="mode-variants">
+                    <button class="mode-variant" :class="{ active: !variant }"
+                        @click="pickVariant('')">Vanilla</button>
+                    <button class="mode-variant" :class="{ active: variant === 'relax' }"
+                        :disabled="!relaxAllowed" @click="pickVariant('relax')">Relax</button>
+                    <button class="mode-variant" :class="{ active: variant === 'autopilot' }"
+                        :disabled="!autopilotAllowed" @click="pickVariant('autopilot')">Autopilot</button>
+                </div>
+
                 <div class="mode-tabs">
                     <button class="mode-tab" v-for="tab in modes" :key="tab.id"
                         :class="{ active: base === tab.id }" @click="pickBase(tab.id)">
                         {{ tab.label }}
                     </button>
-                </div>
-
-                <div class="mode-variants">
-                    <button class="mode-variant" :class="{ active: variant === 'relax' }"
-                        :disabled="!relaxAllowed" @click="pickVariant('relax')">RELAX</button>
-                    <button class="mode-variant" :class="{ active: variant === 'autopilot' }"
-                        :disabled="!autopilotAllowed" @click="pickVariant('autopilot')">AUTOPILOT</button>
                 </div>
             </section>
 
@@ -42,9 +44,9 @@
                             <div class="profile-rank">
                                 <span class="profile-rank-label">
                                     Country Rank
-                                    <span class="country-tag" v-if="info.country">
-                                        {{ info.country.toUpperCase() }}
-                                    </span>
+                                    <span class="country-tag" v-if="flagClass(info.country)"
+                                        :class="flagClass(info.country)"
+                                        :title="info.country.toUpperCase()"></span>
                                 </span>
                                 <span class="profile-rank-value">{{ fmtRank(stats.country_rank) }}</span>
                             </div>
@@ -124,6 +126,27 @@
                 <playcount-graph :months="playcounts"></playcount-graph>
             </section>
 
+            <section class="card" v-if="achievements.length">
+                <h2>
+                    Medals
+                    <span class="muted">({{ medals.length }} / {{ medalTotal }})</span>
+                </h2>
+
+                <p class="muted" v-if="!medals.length">No medals yet.</p>
+
+                <div class="medals" v-else>
+                    <div class="medal" v-for="medal in medals" :key="medal.id">
+                        <img class="medal-icon" :src="medalIcon(medal.file)"
+                            :alt="medal.name" loading="lazy">
+
+                        <div class="medal-tip">
+                            <span class="medal-name">{{ medal.name }}</span>
+                            <span class="medal-desc">{{ medal.description }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="card">
                 <h2>Submitted beatmaps</h2>
                 <p class="muted" v-if="!beatmapsets.length">
@@ -168,16 +191,23 @@
             firstPlaces: [],
             playcounts: [],
             beatmapsets: [],
+            achievements: [],
+            // Medals that exist on the server, reported by the API so the
+            // ratio does not have to be counted from the list.
+            medalTotal: 0,
             counts: { best: 0, recent: 0, first: 0 },
             busy: { best: false, recent: false, first: false },
             modes: [
                 { id: 0, label: "osu!" },
-                { id: 1, label: "taiko" },
-                { id: 2, label: "catch" },
-                { id: 3, label: "mania" }
+                { id: 1, label: "osu!taiko" },
+                { id: 2, label: "osu!catch" },
+                { id: 3, label: "osu!mania" }
             ]
         }),
         computed: {
+            medals() {
+                return this.achievements.filter(medal => medal.unlocked);
+            },
             mode() {
                 if (this.variant === "autopilot") return 8;
                 if (this.variant === "relax") return this.base + 4;
@@ -214,6 +244,13 @@
             }
         },
         methods: {
+            // The icons are downloaded by the game server on its first start
+            // and served from the assets host, the same place the client
+            // takes them from.
+            medalIcon(file) {
+                return "https://assets." + this.$koneko.domain
+                    + "/medals/client/" + file + "@2x.png";
+            },
             pickBase(id) {
                 if (this.base === id) return;
 
@@ -273,6 +310,10 @@
                 this.firstPlaces = (body.firstPlaces && body.firstPlaces.results) || [];
                 this.beatmapsets = (body.beatmapsets && body.beatmapsets.results) || [];
                 this.playcounts = (body.playcounts && body.playcounts.months) || [];
+
+                this.achievements = (body.achievements && body.achievements.results) || [];
+                this.medalTotal = (body.achievements && body.achievements.total)
+                    || this.achievements.length;
 
                 this.counts = {
                     best: (body.best && body.best.count) || this.best.length,
