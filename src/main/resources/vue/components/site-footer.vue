@@ -1,13 +1,19 @@
 <template id="site-footer">
     <footer class="footer">
-        <span>{{ site.name }}</span>
-        <span class="footer-sep">-</span>
-        <span>powered by bancho.jar and koneko-web</span>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-name">{{ site.name }}</span>
+                <span class="footer-note">powered by bancho.jar and koneko-web</span>
+            </div>
 
-        <span class="footer-links">
-            <a v-if="site.links && site.links.discord" :href="site.links.discord" target="_blank" rel="noopener">Discord</a>
-            <a v-if="site.links && site.links.github" :href="site.links.github" target="_blank" rel="noopener">GitHub</a>
-        </span>
+            <div class="footer-links">
+                <a href="/leaderboard">Leaderboard</a>
+                <a href="/beatmaps">Beatmaps</a>
+                <a v-if="links.discord" :href="links.discord" target="_blank" rel="noopener">Discord</a>
+                <a v-if="links.github" :href="links.github" target="_blank" rel="noopener">GitHub</a>
+                <a v-if="links.apiDocs" :href="links.apiDocs" target="_blank" rel="noopener">API</a>
+            </div>
+        </div>
     </footer>
 </template>
 
@@ -17,6 +23,9 @@
         computed: {
             site() {
                 return this.$koneko.site || {};
+            },
+            links() {
+                return this.site.links || {};
             }
         }
     });

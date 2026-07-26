@@ -68,5 +68,23 @@ public final class SiteConfig {
 
         @JsonProperty("show_connect_guide")
         private boolean showConnectGuide = true;
+
+        /**
+         * Background of the welcome band. Any image URL; empty leaves the
+         * plain gradient, which is a complete look on its own.
+         */
+        @JsonProperty("hero_image")
+        private String heroImage = "";
+
+        /** Server logo. Empty falls back to the initials of the name. */
+        @JsonProperty("logo_image")
+        private String logoImage = "";
+
+        /** One line strip above the welcome band. Empty hides it. */
+        private String announcement = "";
+
+        /** Optional target for the link at the end of the strip. */
+        @JsonProperty("announcement_link")
+        private String announcementLink = "";
     }
 }

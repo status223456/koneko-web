@@ -4,6 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Loading...</title>
+    <!--
+        flag-icons ships one SVG per country and addresses them with a
+        class, so flags look the same on every system instead of relying
+        on the emoji font, which Windows does not have.
+    -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="/css/koneko.css">
 </head>
 <body>
@@ -124,6 +134,19 @@
 
                 return "https://assets.ppy.sh/beatmaps/" + setId + "/covers/"
                     + (size || "card") + "@2x.jpg";
+            },
+            // The flag-icons classes for a country code. The flag itself
+            // is a background image, so the element carrying these classes
+            // stays empty. An unknown code gives no class at all, which
+            // leaves an empty box rather than a wrong flag.
+            flagClass(code) {
+                if (!code) return "";
+
+                const value = String(code).trim().toLowerCase();
+
+                if (!/^[a-z]{2}$/.test(value)) return "";
+
+                return "fi fi-" + value;
             },
             // Profile helpers.
             fmtRank(value) {

@@ -64,6 +64,10 @@ public final class VueState {
         home.put("leaderboardSize", config.getHome().getLeaderboardSize());
         home.put("leaderboardMode", config.getHome().getLeaderboardMode());
         home.put("showConnectGuide", config.getHome().isShowConnectGuide());
+        home.put("heroImage", config.getHome().getHeroImage());
+        home.put("logoImage", config.getHome().getLogoImage());
+        home.put("announcement", config.getHome().getAnnouncement());
+        home.put("announcementLink", config.getHome().getAnnouncementLink());
         site.put("home", home);
 
         return site;
