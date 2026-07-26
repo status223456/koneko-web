@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="login.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <section class="card card-narrow">
             <h2>Log in to {{ site.name }}</h2>
 
@@ -34,6 +37,9 @@
                 or ask on the Discord.
             </p>
         </section>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="login.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

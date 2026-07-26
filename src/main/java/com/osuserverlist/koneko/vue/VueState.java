@@ -7,6 +7,10 @@ import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
 import com.osuserverlist.koneko.config.SiteConfig;
+import com.osuserverlist.koneko.plugin.PluginBootstrap;
+import com.osuserverlist.koneko.plugin.PluginService;
+import com.osuserverlist.koneko.plugin.api.Events;
+import com.osuserverlist.koneko.plugin.api.PluginUser;
 
 import io.javalin.http.Context;
 
@@ -31,6 +35,20 @@ public final class VueState {
         state.put("domain", App.env.getDomain());
         state.put("user", user(ctx));
         state.put("fastload", fastload());
+
+        // What the plugins contribute to every page: their slots, their
+        // navigation entries and their own state keys.
+        UserSession session = Auth.current(ctx);
+
+        PluginUser user = session == null ? null : new PluginUser(session.getUserId(),
+                session.getUsername(), session.getPrivileges(), null);
+
+        state.put("plugins", PluginBootstrap.state(ctx, user));
+
+        // Last, so a plugin may still add or replace a top level key.
+        if (PluginService.enabled()) {
+            PluginService.events().publish(new Events.Bootstrap(ctx, state, user));
+        }
 
         return state;
     }

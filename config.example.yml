@@ -53,3 +53,19 @@ home:
   # Leave empty to hide the strip entirely.
   announcement: ""
   announcement_link: ""
+
+# Settings of the .jar plugins. Everything under a plugin id is handed to that
+# plugin as its settings, so a plugin can be configured without touching its
+# jar. A plugin may also read plugins/config/{id}.yml instead; the values here
+# win over that file.
+plugins:
+  # false disables every plugin, exactly like PLUGINS_ENABLED=false.
+  enabled: true
+
+  # Plugin ids that must stay off, even though their jar is in place.
+  disabled: []
+
+  # settings:
+  #   koneko-example:
+  #     greeting: "Welcome"
+  #     show_on_home: true

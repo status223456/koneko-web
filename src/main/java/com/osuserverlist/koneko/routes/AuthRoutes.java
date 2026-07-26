@@ -13,6 +13,9 @@ import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.api.TokenPair;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.plugin.PluginService;
+import com.osuserverlist.koneko.plugin.api.Events;
+import com.osuserverlist.koneko.plugin.api.PluginUser;
 
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.Context;
@@ -64,6 +67,12 @@ public final class AuthRoutes {
                     user.path("priv").asInt(),
                     tokens);
 
+            // Plugins see the login with the token, so one can call an
+            // authenticated backend endpoint on the player's behalf right away.
+            PluginService.events().publish(new Events.Login(ctx,
+                    new PluginUser(session.getUserId(), session.getUsername(),
+                            session.getPrivileges(), tokens.getAccessToken())));
+
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("status", "success");
             body.put("user", Map.of(
@@ -85,7 +94,16 @@ public final class AuthRoutes {
     }
 
     private static void logout(Context ctx) {
+        // Read before the session is gone, so plugins learn who left.
+        UserSession session = Auth.current(ctx);
+
         Auth.destroy(ctx);
+
+        PluginUser user = session == null ? null : new PluginUser(session.getUserId(),
+                session.getUsername(), session.getPrivileges(), null);
+
+        PluginService.events().publish(new Events.Logout(ctx, user));
+
         ctx.json(Map.of("status", "success"));
     }
 

@@ -161,6 +161,50 @@ public final class BanchoApi {
                 .POST(HttpRequest.BodyPublishers.ofString(formBody(form), StandardCharsets.UTF_8)));
     }
 
+    /**
+     * Any method, any body, any content type: the escape hatch behind
+     * {@code ApiClient.request} that lets a plugin reach an endpoint this class
+     * knows nothing about, including ones added to bancho.jar later.
+     *
+     * @param method      GET, POST, PUT, PATCH or DELETE
+     * @param path        path on the API, starting with a slash
+     * @param query       query parameters, may be null
+     * @param body        request body, may be null
+     * @param contentType content type of the body, may be null
+     * @param accessToken bearer token to send, may be null
+     */
+    public JsonNode request(String method, String path, Map<String, String> query,
+            String body, String contentType, String accessToken) throws ApiException {
+
+        String verb = method == null ? "GET" : method.trim().toUpperCase(java.util.Locale.ROOT);
+        String payload = body == null ? "" : body;
+
+        HttpRequest.Builder builder = HttpRequest
+                .newBuilder(URI.create(baseUrl + path + queryString(query)))
+                .timeout(timeout)
+                .header("Accept", "application/json");
+
+        if (contentType != null && !contentType.isBlank()) {
+            builder.header("Content-Type", contentType);
+        }
+
+        if (accessToken != null && !accessToken.isBlank()) {
+            builder.header("Authorization", "Bearer " + accessToken);
+        }
+
+        HttpRequest.BodyPublisher publisher =
+                HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8);
+
+        switch (verb) {
+            case "GET" -> builder.GET();
+            case "DELETE" -> builder.method("DELETE", publisher);
+            case "POST", "PUT", "PATCH" -> builder.method(verb, publisher);
+            default -> throw new ApiException(400, "Unsupported HTTP method: " + verb);
+        }
+
+        return send(builder);
+    }
+
     private JsonNode postForm(String path, Map<String, String> form) throws ApiException {
         return send(HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .timeout(timeout)

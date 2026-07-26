@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.api.FastCache;
+import com.osuserverlist.koneko.plugin.PluginBootstrap;
 import com.osuserverlist.koneko.vue.VueState;
 
 import io.javalin.config.JavalinConfig;
@@ -47,6 +48,9 @@ public final class DataRoutes {
     /** How many beatmap sets one page of the listing holds. */
     private static final int BEATMAPS_PAGE_SIZE = 24;
 
+    /** How many scores one page of a beatmap leaderboard holds. */
+    private static final int MAP_SCORES_PAGE_SIZE = 50;
+
     private DataRoutes() {
     }
 
@@ -59,6 +63,7 @@ public final class DataRoutes {
         config.routes.get("/data/leaderboard", DataRoutes::leaderboard);
         config.routes.get("/data/beatmaps", DataRoutes::beatmaps);
         config.routes.get("/data/beatmapset/{setId}", DataRoutes::beatmapset);
+        config.routes.get("/data/map-scores/{beatmapId}", DataRoutes::mapScores);
     }
 
     /**
@@ -98,7 +103,10 @@ public final class DataRoutes {
      */
     private static void home(Context ctx) {
         fastHeaders(ctx);
-        ctx.json(FastCache.get("home", DataRoutes::homeBody));
+        // Every answer passes through the plugins, which may add fields to it.
+        // The cached body is copied first, so nothing a plugin writes ends up
+        // in the cache.
+        ctx.json(PluginBootstrap.enrich(ctx, "home", FastCache.get("home", DataRoutes::homeBody)));
     }
 
     private static Map<String, Object> homeBody() {
@@ -136,7 +144,7 @@ public final class DataRoutes {
         }
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "profile", body));
     }
 
     private static Map<String, Object> profileBody(String identifier, int mode) {
@@ -230,7 +238,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "scores", body));
     }
 
     /**
@@ -260,7 +268,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "beatmaps", body));
     }
 
     /** One beatmap set with all of its difficulties. */
@@ -275,7 +283,51 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "beatmapset", body));
+    }
+
+    /**
+     * The leaderboard of one difficulty.
+     *
+     * <p>Scores belong to a beatmap, not to a set, so this is its own request:
+     * a set with twenty difficulties would otherwise have to fetch twenty
+     * leaderboards nobody is going to look at. The beatmap id from the set
+     * payload is passed straight through; the API resolves it to a checksum.
+     *
+     * <p>The answer is the same for everyone, so it is cached like the rest of
+     * the read side. Only the submitted best score per player is returned by
+     * the API, already ordered by score.
+     */
+    private static void mapScores(Context ctx) {
+        String beatmapId = ctx.pathParam("beatmapId");
+        int mode = intQuery(ctx, "mode", 0);
+        int offset = Math.max(0, intQuery(ctx, "offset", 0));
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("id", beatmapId);
+        params.put("mode", String.valueOf(mode));
+        params.put("offset", String.valueOf(offset));
+        params.put("limit", String.valueOf(MAP_SCORES_PAGE_SIZE));
+
+        // The API takes a mods bitmask filter. Anything that is not a plain
+        // number is dropped rather than passed on.
+        String mods = trimmed(ctx.queryParam("mods"));
+
+        if (mods.matches("[0-9]{1,10}")) {
+            params.put("mods", mods);
+        }
+
+        String key = "mapScores:" + beatmapId + ":" + mode + ":" + mods + ":" + offset;
+
+        Map<String, Object> body = FastCache.get(key, () -> {
+            Map<String, Object> page = new LinkedHashMap<>();
+            page.put("scores", quietly("/api/v1/get_map_scores", params));
+
+            return page;
+        });
+
+        fastHeaders(ctx);
+        ctx.json(PluginBootstrap.enrich(ctx, "mapScores", body));
     }
 
     /**
@@ -324,7 +376,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "leaderboard", body));
     }
 
     /**

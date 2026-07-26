@@ -1,5 +1,10 @@
 package com.osuserverlist.koneko.config;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -21,6 +26,7 @@ public final class SiteConfig {
     private ServerSection server = new ServerSection();
     private LinksSection links = new LinksSection();
     private HomeSection home = new HomeSection();
+    private PluginsSection plugins = new PluginsSection();
 
     /** Identity of the osu! server this frontend belongs to. */
     @Getter
@@ -47,6 +53,38 @@ public final class SiteConfig {
 
         @JsonProperty("api_docs")
         private String apiDocs = "";
+    }
+
+    /**
+     * The .jar plugins loaded from the plugins directory.
+     *
+     * <p>Plugin specific settings live under {@code settings}, keyed by plugin
+     * id, and a plugin may also ship its own {@code plugins/config/{id}.yml},
+     * which wins over this block.
+     */
+    @Getter
+    @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static final class PluginsSection {
+        /** Turns the whole plugin host off; .env can override it. */
+        private boolean enabled = true;
+
+        /** Plugin ids that are loaded but never started. */
+        private List<String> disabled = new ArrayList<>();
+
+        /** Per plugin settings, keyed by plugin id. */
+        private Map<String, Map<String, Object>> settings = new LinkedHashMap<>();
+
+        /** The settings of one plugin, or an empty map. */
+        public Map<String, Object> settingsOf(String pluginId) {
+            if (settings == null || pluginId == null) {
+                return Map.of();
+            }
+
+            Map<String, Object> values = settings.get(pluginId);
+
+            return values == null ? Map.of() : values;
+        }
     }
 
     /** What the front page shows. */

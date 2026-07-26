@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="beatmapset.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <p class="muted" v-if="loading">Loading the beatmap...</p>
 
         <section class="card" v-else-if="error">
@@ -94,8 +97,16 @@
                         <div class="diff-fact-wide"><dt>Checksum:</dt><dd class="mono">{{ selected.md5 }}</dd></div>
                     </dl>
                 </section>
+
+                <!-- The leaderboard of the selected difficulty. Fetched by the
+                     component itself, so switching difficulties never reloads
+                     the page. -->
+                <map-scores :beatmap="selected"></map-scores>
             </template>
         </template>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="beatmapset.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

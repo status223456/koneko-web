@@ -31,6 +31,14 @@ public final class Env {
     private final int fastLoadStaleSeconds;
     private final int fastLoadClientTtlSeconds;
 
+    // Plugins. The kill switch lives here rather than only in config.yml so a
+    // deployment can start without plugins - to get back in after a bad jar -
+    // without editing the site config.
+    private final boolean pluginsEnabled;
+    private final String pluginsDir;
+    private final String pluginsDisabled;
+    private final int pluginAssetTtlSeconds;
+
     private Env(Dotenv dotenv) {
         this.port = intOf(dotenv, "PORT", 8300);
         this.domain = stringOf(dotenv, "DOMAIN", "localhost");
@@ -44,6 +52,10 @@ public final class Env {
         this.fastLoadTtlSeconds = intOf(dotenv, "FASTLOAD_TTL_SECONDS", 15);
         this.fastLoadStaleSeconds = intOf(dotenv, "FASTLOAD_STALE_SECONDS", 120);
         this.fastLoadClientTtlSeconds = intOf(dotenv, "FASTLOAD_CLIENT_TTL_SECONDS", 600);
+        this.pluginsEnabled = boolOf(dotenv, "PLUGINS_ENABLED", true);
+        this.pluginsDir = stringOf(dotenv, "PLUGINS_DIR", "plugins");
+        this.pluginsDisabled = stringOf(dotenv, "PLUGINS_DISABLED", "");
+        this.pluginAssetTtlSeconds = intOf(dotenv, "PLUGIN_ASSET_CACHE_SECONDS", 3600);
     }
 
     /** Loads {@code .env} from the working directory; a missing file is fine. */
@@ -85,5 +97,17 @@ public final class Env {
             logger.warn("<{}> is not a number, falling back to <{}>", key, fallback);
             return fallback;
         }
+    }
+
+    private static boolean boolOf(Dotenv dotenv, String key, boolean fallback) {
+        String raw = dotenv.get(key);
+
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+
+        String value = raw.trim();
+
+        return "true".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) || "1".equals(value);
     }
 }

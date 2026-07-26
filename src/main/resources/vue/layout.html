@@ -15,6 +15,9 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="/css/koneko.css">
+
+    <!-- Stylesheets and head html contributed by .jar plugins. -->
+@pluginHead
 </head>
 <body>
 
@@ -255,11 +258,80 @@
     });
 </script>
 
+<script>
+    // The plugin side of the front end. Everything a plugin contributed to a
+    // page arrives in koneko.plugins, so no component has to fetch anything to
+    // know what is loaded.
+    app.mixin({
+        methods: {
+            // A state key contributed by a plugin, e.g.
+            // $options ... this.pluginData("tournaments", "upcoming").
+            pluginData(pluginId, key, fallback) {
+                const data = (koneko.plugins && koneko.plugins.data) || {};
+                const own = data[pluginId] || {};
+                const value = key === undefined ? own : own[key];
+
+                return value === undefined ? (fallback === undefined ? null : fallback) : value;
+            },
+            // The url of a file a plugin ships in its jar.
+            pluginAsset(pluginId, path) {
+                return "/plugin-assets/" + pluginId + (path.startsWith("/") ? path : "/" + path);
+            },
+            // The url of one of a plugin's own endpoints.
+            pluginAction(pluginId, path) {
+                return "/plugins/" + pluginId + (path.startsWith("/") ? path : "/" + path);
+            },
+            // The navigation entries plugins added, already filtered by the
+            // server to what this visitor may see.
+            pluginNav(placement) {
+                const items = (koneko.plugins && koneko.plugins.nav) || [];
+
+                return placement === "footer" ? items.filter(item => item.footer) : items;
+            },
+            // Ids of the navigation entries plugins asked to hide, core ones
+            // included. See registry.hideNavItem(id).
+            pluginNavHidden() {
+                return (koneko.plugins && koneko.plugins.navHidden) || [];
+            },
+            pluginLoaded(pluginId) {
+                const ids = (koneko.plugins && koneko.plugins.ids) || [];
+
+                return ids.indexOf(pluginId) !== -1;
+            }
+        }
+    });
+
+    // A slot: every component plugins registered for this name, in the order
+    // they asked for. Unknown slots simply render nothing, so a page may open
+    // as many as it likes.
+    app.component("koneko-slot", {
+        props: {
+            name: { type: String, required: true },
+            // Whatever the surrounding page knows: the player on a profile, the
+            // set on a beatmap page. Handed to every component as slotContext.
+            context: { type: Object, default: null }
+        },
+        computed: {
+            entries() {
+                const slots = (koneko.plugins && koneko.plugins.slots) || {};
+
+                return slots[this.name] || [];
+            }
+        },
+        template: `<template v-for="(entry, index) in entries" :key="entry.pluginId + ':' + index">
+            <component :is="entry.component" v-bind="entry.props" :slot-context="context"></component>
+        </template>`
+    });
+</script>
+
 @componentRegistration
 
 <script>
     app.mount("#koneko-app");
 </script>
+
+<!-- Scripts and body html contributed by .jar plugins. -->
+@pluginBody
 
 </body>
 </html>
