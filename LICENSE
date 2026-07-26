@@ -1,3 +1,19 @@
+koneko-web - web frontend for bancho.jar
+Copyright (C) 2026  OpenBancho
+
+This program is licensed under the GNU Affero General Public License,
+version 3, reproduced verbatim below, WITH THE ADDITIONAL TERMS stated
+at the end of this file under the heading "KONEKO-WEB PLUGIN TERMS",
+granted under section 7 of that License. Those additional terms allow
+Paid Plugins to remain closed source, require Free Plugins to always be
+open source, and reserve ownership of the koneko-web platform and the
+Plugin API to OpenBancho.
+
+If you remove the additional terms, as section 7 permits, the plain terms
+of the GNU AGPL version 3 apply to your copy.
+
+--------------------------------------------------------------------
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
@@ -633,9 +649,9 @@ the "copyright" line and a pointer to where the full notice is found.
     Copyright (C) <year>  <name of author>
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -659,3 +675,138 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
+
+
+====================================================================
+         ADDITIONAL TERMS UNDER SECTION 7 OF THIS LICENSE
+====================================================================
+
+                       KONEKO-WEB PLUGIN TERMS
+         Additional terms under section 7 of the GNU Affero
+                General Public License, version 3
+
+Copyright (C) 2026  OpenBancho ("OpenBancho", "we", "us").
+
+These Plugin Terms are additional terms within the meaning of section 7
+of the GNU Affero General Public License, version 3 ("AGPL"), and apply
+to koneko-web and to any covered work derived from it. In case of a
+conflict between these Plugin Terms and the AGPL, the AGPL governs,
+except where these Plugin Terms grant an additional permission, which is
+expressly allowed by section 7 of the AGPL.
+
+
+  0. Definitions.
+
+  "Plugin" means a separately packaged work (typically a .jar loaded at
+runtime by the koneko-web plugin runtime, PF4J-based) that interacts with
+koneko-web solely through the published plugin API, and that is not a
+modification of koneko-web itself.
+
+  "Plugin API" means the public interfaces, classes, slots, events and
+data contracts published by OpenBancho for the purpose of writing
+Plugins, including the artifacts published as
+com.github.OpenBancho:koneko-web.
+
+  "Paid Plugin" means a Plugin that is distributed only in exchange for a
+fee, subscription, license purchase, or other consideration, and that is
+not made available free of charge to the general public.
+
+  "Free Plugin" means any Plugin that is not a Paid Plugin, including any
+Plugin distributed gratis, bundled at no charge, promoted as free, or
+made publicly available without consideration.
+
+  "Modification" means any change to the source code of koneko-web
+itself, including forks, patches, replaced resources, altered templates,
+or altered server logic.
+
+
+  1. Additional permission for Paid Plugins.
+
+  As an additional permission under section 7 of the AGPL, OpenBancho
+grants you permission to develop, distribute and operate a Paid Plugin
+under license terms of your choice, including proprietary and
+closed-source terms, and you are NOT required to release the
+Corresponding Source of that Paid Plugin, notwithstanding sections 5, 6
+and 13 of the AGPL, provided that all of the following conditions are
+met:
+
+    a) The Paid Plugin interacts with koneko-web only through the Plugin
+    API, and contains no copied, adapted or translated portion of
+    koneko-web source code beyond the Plugin API itself.
+
+    b) The Paid Plugin contains no Modification of koneko-web. Any
+    Modification remains fully subject to the AGPL, including section 13
+    (remote network interaction), with no exception.
+
+    c) The unmodified AGPL obligations of koneko-web itself continue to
+    be honoured by the operator of the server, including the offer of
+    Corresponding Source of koneko-web to all users interacting with it
+    over a network.
+
+    d) The Paid Plugin states its own license and copyright notice, does
+    not misrepresent its origin, and does not remove or obscure the
+    Appropriate Legal Notices of koneko-web.
+
+  This permission is granted only for Paid Plugins. If a Paid Plugin is
+later distributed free of charge to the general public, it becomes a Free
+Plugin from that moment on and section 2 applies to it.
+
+
+  2. Free Plugins must be open source.
+
+  A Free Plugin must be released as free and open source software. Its
+complete Corresponding Source must be made publicly available, at no
+charge, to every recipient and to every user interacting with it over a
+network, under the AGPL version 3 or a later version, or under a license
+compatible with it that grants at least equivalent source availability
+rights.
+
+  No additional permission of any kind is granted for Free Plugins. The
+permission in section 1 does not extend to them.
+
+
+  3. Ownership of the plugin platform.
+
+  All rights, title and interest in and to koneko-web, the Plugin API,
+the koneko-web plugin runtime, and the OpenBancho names, logos and
+trademarks remain the exclusive property of OpenBancho. Nothing in these
+Plugin Terms transfers ownership of those materials.
+
+  These Plugin Terms do not, by themselves, transfer to OpenBancho the
+copyright in a Plugin authored by a third party. Where a Plugin is
+authored by OpenBancho, commissioned by OpenBancho, contributed to an
+OpenBancho repository, or distributed through an OpenBancho distribution
+channel, ownership and licensing of that Plugin are governed by the
+separate agreement applicable to that contribution or channel (for
+example the OpenBancho Contributor License Agreement or the OpenBancho
+Plugin Distribution Agreement), and such Plugins are the property of
+OpenBancho to the extent set out in that agreement.
+
+
+  4. Termination of the additional permission.
+
+  The additional permission granted in section 1 terminates automatically
+if you breach any of its conditions, or if you distribute a Free Plugin
+in closed-source form. Upon termination, the plain terms of the AGPL
+apply to your Plugin in full, and the Corresponding Source of that Plugin
+must be released accordingly.
+
+  Termination of this additional permission does not affect the rights of
+anyone who received the Plugin from you in compliance with these terms.
+
+
+  5. Removal of these terms.
+
+  As provided by section 7 of the AGPL, you may remove these additional
+terms from any copy of the covered work that you convey. Removing them
+removes the permission in section 1 as well; the resulting copy is then
+governed by the plain AGPL version 3.
+
+
+  6. No warranty.
+
+  These Plugin Terms add no warranty. Sections 15, 16 and 17 of the AGPL
+apply to koneko-web, to the Plugin API, and to these terms.
+
+
+Contact: OpenBancho - https://github.com/OpenBancho
