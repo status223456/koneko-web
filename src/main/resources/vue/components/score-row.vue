@@ -1,5 +1,10 @@
 <template id="score-row">
     <div class="score-row">
+        <!-- Set banner. Sets uploaded here have none on osu!'s CDN, in which
+             case the image simply never loads and the row keeps its plain
+             background. -->
+        <div class="score-cover" v-if="coverStyle" :style="coverStyle"></div>
+
         <div class="score-grade" :class="'grade-' + gradeClass">{{ score.grade }}</div>
 
         <div class="score-map">
@@ -40,6 +45,12 @@
             index: { default: null }
         },
         computed: {
+            coverStyle() {
+                const setId = this.score.beatmap && this.score.beatmap.set_id;
+                if (!setId) return null;
+
+                return { backgroundImage: 'url("' + this.coverUrl(setId, "cover") + '")' };
+            },
             gradeClass() {
                 const grade = (this.score.grade || "f").toString().toLowerCase();
                 return grade.replace("+", "plus");
