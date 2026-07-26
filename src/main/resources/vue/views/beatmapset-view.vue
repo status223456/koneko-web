@@ -97,6 +97,11 @@
                         <div class="diff-fact-wide"><dt>Checksum:</dt><dd class="mono">{{ selected.md5 }}</dd></div>
                     </dl>
                 </section>
+
+                <!-- The leaderboard of the selected difficulty. Fetched by the
+                     component itself, so switching difficulties never reloads
+                     the page. -->
+                <map-scores :beatmap="selected"></map-scores>
             </template>
         </template>
 

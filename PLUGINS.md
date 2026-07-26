@@ -199,6 +199,7 @@ Slots are opened by the core pages and rendered in registration order:
 | `Slots.LEADERBOARD_TOP`, `LEADERBOARD_BOTTOM` | ranking |
 | `Slots.BEATMAPS_TOP`, `BEATMAPS_BOTTOM` | beatmap search |
 | `Slots.BEATMAPSET_TOP`, `BEATMAPSET_BOTTOM` | one beatmap set |
+| `Slots.BEATMAPSET_SCORES` | above the scoreboard of the selected difficulty |
 | `Slots.LOGIN_TOP`, `LOGIN_BOTTOM` | login page |
 | `Slots.FOOTER_LINKS`, `FOOTER_BOTTOM` | footer |
 

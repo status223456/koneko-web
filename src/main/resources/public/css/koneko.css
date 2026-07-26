@@ -1964,3 +1964,83 @@ body {
     color: var(--muted);
     font-size: 12px;
 }
+
+/* map scores */
+
+.map-scores-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.map-scores-head h2 {
+    margin: 0;
+}
+
+.map-scores .score-place {
+    width: 42px;
+    color: var(--muted);
+}
+
+.map-scores .score-grade-cell {
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.map-scores tr.score-mine td {
+    background: rgba(255, 209, 102, 0.08);
+}
+
+.map-scores .pager {
+    margin-top: 10px;
+}
+
+/* mode and vanilla / relax / autopilot pickers of the map scoreboard */
+
+.map-scores .score-pickers {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.map-scores .variant-picker {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.variant-chip {
+    min-width: 32px;
+    padding: 2px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.7;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.variant-chip:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--text);
+}
+
+.variant-chip.active {
+    background: #ffd166;
+    border-color: #ffd166;
+    color: #14151a;
+}
+
+/* A board the difficulty cannot have: only standard difficulties are
+   converted, mania has no relax and autopilot is standard only. */
+.variant-chip:disabled {
+    opacity: 0.35;
+    cursor: default;
+}

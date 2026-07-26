@@ -56,6 +56,9 @@ public final class Slots {
     /** Beatmap set page, above the set header. */
     public static final String BEATMAPSET_TOP = "beatmapset.top";
 
+    /** Beatmap set page, above the scoreboard of the selected difficulty. */
+    public static final String BEATMAPSET_SCORES = "beatmapset.scores";
+
     /** Beatmap set page, under the difficulty list. */
     public static final String BEATMAPSET_BOTTOM = "beatmapset.bottom";
 
