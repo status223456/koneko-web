@@ -1,6 +1,7 @@
 package com.osuserverlist.koneko.routes;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
+import com.osuserverlist.koneko.api.FastCache;
 import com.osuserverlist.koneko.vue.VueState;
 
 import io.javalin.config.JavalinConfig;
@@ -32,6 +34,12 @@ public final class DataRoutes {
     /** How many best scores and sets a profile page shows at once. */
     private static final int PROFILE_PAGE_SIZE = 10;
 
+    /** How many months the playcount graph covers. */
+    private static final int PLAYCOUNT_MONTHS = 12;
+
+    /** How many beatmap sets one page of the listing holds. */
+    private static final int BEATMAPS_PAGE_SIZE = 24;
+
     private DataRoutes() {
     }
 
@@ -40,6 +48,9 @@ public final class DataRoutes {
         config.routes.get("/data/session", DataRoutes::session);
         config.routes.get("/data/home", DataRoutes::home);
         config.routes.get("/data/profile/{identifier}", DataRoutes::profile);
+        config.routes.get("/data/scores/{identifier}", DataRoutes::scores);
+        config.routes.get("/data/beatmaps", DataRoutes::beatmaps);
+        config.routes.get("/data/beatmapset/{setId}", DataRoutes::beatmapset);
     }
 
     /**
@@ -70,12 +81,23 @@ public final class DataRoutes {
         ctx.json(body);
     }
 
-    /** Front page: the counters and the top of the leaderboard. */
+    /**
+     * Front page: the counters and the top of the leaderboard.
+     *
+     * <p>Nothing here depends on who is asking, so it goes through
+     * {@link FastCache}: the usual answer is served from memory and the API
+     * is only called when the window has passed.
+     */
     private static void home(Context ctx) {
+        fastHeaders(ctx);
+        ctx.json(FastCache.get("home", DataRoutes::homeBody));
+    }
+
+    private static Map<String, Object> homeBody() {
         Map<String, Object> body = new LinkedHashMap<>();
 
         if (App.site.getHome().isShowStats()) {
-            body.put("stats", quietly("/api/v1/get_server_stats", Map.of()));
+            body.put("stats", counters(quietly("/api/v1/get_server_stats", Map.of())));
         }
 
         if (App.site.getHome().isShowLeaderboard()) {
@@ -87,7 +109,7 @@ public final class DataRoutes {
                     "limit", String.valueOf(size))));
         }
 
-        ctx.json(body);
+        return body;
     }
 
     /**
@@ -99,6 +121,24 @@ public final class DataRoutes {
         String identifier = ctx.pathParam("identifier");
         int mode = intQuery(ctx, "mode", 0);
 
+        // A profile is public, so the same page may be served from the
+        // cache to everyone. The key has to carry the mode as well.
+        String key = "profile:" + mode + ":" + identifier.toLowerCase(Locale.ROOT);
+
+        Map<String, Object> body;
+
+        try {
+            body = FastCache.get(key, () -> profileBody(identifier, mode));
+        } catch (ApiFailure e) {
+            ctx.status(e.status == 404 ? 404 : 502).json(Map.of("status", e.getMessage()));
+            return;
+        }
+
+        fastHeaders(ctx);
+        ctx.json(body);
+    }
+
+    private static Map<String, Object> profileBody(String identifier, int mode) {
         Map<String, String> who = who(identifier);
 
         JsonNode details;
@@ -106,8 +146,8 @@ public final class DataRoutes {
         try {
             details = App.api.get("/api/v1/get_player_details", withAll(who, Map.of("scope", "all")));
         } catch (ApiException e) {
-            ctx.status(e.getStatus() == 404 ? 404 : 502).json(Map.of("status", e.getMessage()));
-            return;
+            // Thrown out of the cache loader, so a failure is never stored.
+            throw new ApiFailure(e);
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -124,6 +164,12 @@ public final class DataRoutes {
         body.put("recent", quietly("/api/v1/get_player_scores",
                 withAll(who, withAll(paging, Map.of("scope", "recent")))));
 
+        body.put("firstPlaces", quietly("/api/v1/get_player_first_places", withAll(who, paging)));
+
+        body.put("playcounts", quietly("/api/v1/get_player_playcounts", withAll(who, Map.of(
+                "mode", String.valueOf(mode),
+                "months", String.valueOf(PLAYCOUNT_MONTHS)))));
+
         body.put("mostPlayed", quietly("/api/v1/get_player_most_played", withAll(who, paging)));
 
         // The route added to bancho.jar for locally submitted sets: this is
@@ -131,7 +177,122 @@ public final class DataRoutes {
         body.put("beatmapsets", quietly("/api/v1/get_player_beatmapsets",
                 withAll(who, Map.of("limit", String.valueOf(PROFILE_PAGE_SIZE)))));
 
+        return body;
+    }
+
+    /**
+     * Paging for the score lists of a profile. The profile itself ships the
+     * first page of every list; this is what "load more" asks for.
+     *
+     * <p>Scope is "best", "recent" or "first", the last one being the number
+     * one scores, which live on their own endpoint.
+     */
+    private static void scores(Context ctx) {
+        String identifier = ctx.pathParam("identifier");
+        int mode = intQuery(ctx, "mode", 0);
+        int offset = Math.max(0, intQuery(ctx, "offset", 0));
+
+        String scope = trimmed(ctx.queryParam("scope"));
+
+        if (scope.isEmpty()) {
+            scope = "recent";
+        }
+
+        boolean firstPlaces = "first".equals(scope);
+
+        Map<String, String> params = new LinkedHashMap<>(who(identifier));
+        params.put("mode", String.valueOf(mode));
+        params.put("offset", String.valueOf(offset));
+        params.put("limit", String.valueOf(PROFILE_PAGE_SIZE));
+
+        if (!firstPlaces) {
+            params.put("scope", scope);
+        }
+
+        String path = firstPlaces
+                ? "/api/v1/get_player_first_places"
+                : "/api/v1/get_player_scores";
+
+        String key = "scores:" + identifier.toLowerCase(Locale.ROOT)
+                + ":" + scope + ":" + mode + ":" + offset;
+
+        Map<String, Object> body = FastCache.get(key, () -> {
+            Map<String, Object> page = new LinkedHashMap<>();
+            page.put("scores", quietly(path, params));
+
+            return page;
+        });
+
+        fastHeaders(ctx);
         ctx.json(body);
+    }
+
+    /**
+     * The beatmap listing. Search text and filters are passed straight to
+     * the API, which does the grouping by set.
+     */
+    private static void beatmaps(Context ctx) {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("limit", String.valueOf(BEATMAPS_PAGE_SIZE));
+        params.put("offset", String.valueOf(Math.max(0, intQuery(ctx, "offset", 0))));
+
+        for (String name : new String[] { "q", "status", "mode", "server", "sort" }) {
+            String value = trimmed(ctx.queryParam(name));
+
+            if (!value.isEmpty()) {
+                params.put(name, value);
+            }
+        }
+
+        // The same search means the same page for everyone, so the whole
+        // parameter set is the cache key.
+        Map<String, Object> body = FastCache.get("beatmaps:" + params, () -> {
+            Map<String, Object> page = new LinkedHashMap<>();
+            page.put("beatmapsets", quietly("/api/v1/search_beatmapsets", params));
+
+            return page;
+        });
+
+        fastHeaders(ctx);
+        ctx.json(body);
+    }
+
+    /** One beatmap set with all of its difficulties. */
+    private static void beatmapset(Context ctx) {
+        String setId = ctx.pathParam("setId");
+
+        Map<String, Object> body = FastCache.get("beatmapset:" + setId, () -> {
+            Map<String, Object> page = new LinkedHashMap<>();
+            page.put("beatmapset", quietly("/api/v1/get_beatmapset", Map.of("id", setId)));
+
+            return page;
+        });
+
+        fastHeaders(ctx);
+        ctx.json(body);
+    }
+
+    /**
+     * Tells the browser how long the answer may be reused. With FastLoad
+     * off this stays a plain no-store, so nothing is cached anywhere.
+     */
+    private static void fastHeaders(Context ctx) {
+        if (FastCache.enabled()) {
+            ctx.header("Cache-Control", "public, max-age=" + FastCache.freshSeconds());
+        } else {
+            ctx.header("Cache-Control", "no-store");
+        }
+    }
+
+    /** An API failure carried out of a cache loader. */
+    private static final class ApiFailure extends RuntimeException {
+
+        private final int status;
+
+        private ApiFailure(ApiException cause) {
+            super(cause.getMessage(), cause);
+            this.status = cause.getStatus();
+        }
     }
 
     /**
@@ -148,6 +309,36 @@ public final class DataRoutes {
         }
     }
 
+    /**
+     * Normalises the counters of the stats endpoint into the names the front
+     * page uses, so a field rename on the backend cannot silently blank a
+     * card. Both the camelCase and the snake_case spelling are accepted.
+     */
+    private static Map<String, Object> counters(JsonNode stats) {
+        if (stats == null) {
+            return null;
+        }
+
+        Map<String, Object> counts = new LinkedHashMap<>();
+        counts.put("online", number(stats, "onlinePlayers", "online_players", "online"));
+        counts.put("players", number(stats, "totalPlayers", "total_players", "players"));
+        counts.put("beatmaps", number(stats, "maps", "beatmaps", "totalMaps"));
+        counts.put("scores", number(stats, "scores", "totalScores"));
+        return counts;
+    }
+
+    private static Long number(JsonNode node, String... names) {
+        for (String name : names) {
+            JsonNode value = node.get(name);
+
+            if (value != null && value.isNumber()) {
+                return value.asLong();
+            }
+        }
+
+        return null;
+    }
+
     private static Map<String, String> who(String identifier) {
         if (identifier != null && identifier.chars().allMatch(Character::isDigit) && !identifier.isBlank()) {
             return Map.of("id", identifier);
@@ -160,6 +351,10 @@ public final class DataRoutes {
         Map<String, String> merged = new LinkedHashMap<>(first);
         merged.putAll(second);
         return merged;
+    }
+
+    private static String trimmed(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static int intQuery(Context ctx, String name, int fallback) {

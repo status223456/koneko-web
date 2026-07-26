@@ -40,11 +40,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(row, index) in leaderboard" :key="row.player_id || index">
-                        <td>{{ index + 1 }}</td>
-                        <td><a :href="'/u/' + row.player_id">{{ row.name }}</a></td>
+                    <tr v-for="(row, index) in leaderboard" :key="row.id || index">
+                        <td>{{ row.rank || index + 1 }}</td>
+                        <td><a :href="'/u/' + row.id">{{ row.name }}</a></td>
                         <td>{{ fmtNumber(row.pp) }}</td>
-                        <td>{{ fmtDecimal(row.acc) }}%</td>
+                        <td>{{ fmtAccuracy(row.acc) }}</td>
                         <td>{{ fmtNumber(row.plays) }}</td>
                     </tr>
                 </tbody>
@@ -87,23 +87,36 @@
             }
         },
         methods: {
-            // The stats endpoint groups its counters; this keeps the template
-            // readable and tolerant of a missing section.
+            // DataRoutes already normalises the counter names, so a missing
+            // section is the only case left to handle.
             stat(name) {
-                if (!this.stats) return null;
-                const counts = this.stats.counts || this.stats;
-                return counts[name];
+                return this.stats ? this.stats[name] : null;
+            },
+            apply(body) {
+                this.stats = body.stats || null;
+                this.leaderboard = (body.leaderboard && body.leaderboard.results) || [];
             }
         },
         async created() {
             this.setTitle(null);
 
+            // FastLoad: paint the numbers of the last visit right away, so
+            // the page is never empty while the API answer is on its way.
+            const cached = this.fastLoad("home");
+
+            if (cached) {
+                this.apply(cached);
+                this.loading = false;
+            }
+
             try {
                 const response = await fetch("/data/home");
                 const body = await response.json();
 
-                this.stats = body.stats || null;
-                this.leaderboard = (body.leaderboard && body.leaderboard.results) || [];
+                this.apply(body);
+                this.fastSave("home", body);
+            } catch (e) {
+                // The cached page stays on screen when the API is down.
             } finally {
                 this.loading = false;
             }

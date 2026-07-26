@@ -21,7 +21,7 @@
 <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
 
 <script>
-    // The app has to exist before @componentRegistration runs: every
+    // The app has to exist before the components are registered: every
     // component inlined below registers itself on this exact variable.
     const koneko = window.__koneko || { site: {}, user: null, domain: "" };
 
@@ -32,6 +32,50 @@
     // Formatting helpers every component needs, kept in one place.
     app.mixin({
         methods: {
+            // FastLoad, browser side: the last answer of a page is kept in
+            // localStorage, painted immediately on the next visit and then
+            // replaced by the fresh one. Only public page data goes in here.
+            fastKey(key) {
+                return "koneko:fast:" + key;
+            },
+            fastLoad(key) {
+                const settings = koneko.fastload || {};
+
+                if (!settings.enabled) return null;
+
+                try {
+                    const raw = window.localStorage.getItem(this.fastKey(key));
+                    if (!raw) return null;
+
+                    const entry = JSON.parse(raw);
+                    if (!entry || !entry.body) return null;
+
+                    const ttl = (settings.clientTtl || 0) * 1000;
+
+                    if (ttl > 0 && Date.now() - entry.storedAt > ttl) {
+                        window.localStorage.removeItem(this.fastKey(key));
+                        return null;
+                    }
+
+                    return entry.body;
+                } catch (e) {
+                    return null;
+                }
+            },
+            fastSave(key, body) {
+                const settings = koneko.fastload || {};
+
+                if (!settings.enabled || !body) return;
+
+                try {
+                    window.localStorage.setItem(this.fastKey(key), JSON.stringify({
+                        storedAt: Date.now(),
+                        body: body
+                    }));
+                } catch (e) {
+                    // A full or blocked storage is not worth a broken page.
+                }
+            },
             fmtNumber(value) {
                 return (value === null || value === undefined) ? "-" : Number(value).toLocaleString();
             },
@@ -39,10 +83,146 @@
                 if (value === null || value === undefined) return "-";
                 return Number(value).toFixed(digits === undefined ? 2 : digits);
             },
-            fmtDate(value) {
-                if (!value) return "-";
+            fmtAccuracy(value) {
+                if (value === null || value === undefined) return "-";
+                // The API stores accuracy as a fraction of 1.
+                return (Number(value) * 100).toFixed(2) + "%";
+            },
+            // Shared beatmap helpers: every page that shows a map needs the
+            // same status names, mode names, lengths and cover urls.
+            statusName(status) {
+                const names = {
+                    "-2": "graveyard",
+                    "-1": "work in progress",
+                    "0": "pending",
+                    "1": "ranked",
+                    "2": "approved",
+                    "3": "qualified",
+                    "4": "loved"
+                };
+
+                return names[String(status)] || "unknown";
+            },
+            modeName(mode) {
+                const names = ["osu!", "taiko", "catch", "mania"];
+                return names[Number(mode)] || "osu!";
+            },
+            fmtLength(seconds) {
+                const total = Number(seconds);
+
+                if (!total || total < 0) return "0:00";
+
+                const minutes = Math.floor(total / 60);
+                const rest = Math.floor(total % 60);
+
+                return minutes + ":" + String(rest).padStart(2, "0");
+            },
+            // osu! hosts the set banners. Sets submitted here have none, so
+            // every image falls back to a plain gradient on error.
+            coverUrl(setId, size) {
+                if (!setId) return "";
+
+                return "https://assets.ppy.sh/beatmaps/" + setId + "/covers/"
+                    + (size || "card") + "@2x.jpg";
+            },
+            // Profile helpers.
+            fmtRank(value) {
+                if (value === null || value === undefined) return "-";
+                return "#" + Number(value).toLocaleString();
+            },
+            fmtPlaytime(seconds) {
+                const total = Number(seconds);
+
+                if (!total || total < 0) return "0 minutes";
+
+                const days = Math.floor(total / 86400);
+                const hours = Math.floor((total % 86400) / 3600);
+                const minutes = Math.floor((total % 3600) / 60);
+
+                // The two largest units that are not zero, the way the
+                // client puts it: "14 days 22 minutes".
+                const parts = [];
+
+                if (days) parts.push(days + (days === 1 ? " day" : " days"));
+                if (hours) parts.push(hours + (hours === 1 ? " hour" : " hours"));
+                if (minutes && parts.length < 2) {
+                    parts.push(minutes + (minutes === 1 ? " minute" : " minutes"));
+                }
+
+                return parts.slice(0, 2).join(" ") || "0 minutes";
+            },
+            // The mod bits the client sends, minus the ones implied by
+            // another mod, so NC does not show up next to DT.
+            fmtMods(mods) {
+                const value = Number(mods);
+
+                if (!value) return [];
+
+                const table = [
+                    [1, "NF"], [2, "EZ"], [4, "TD"], [8, "HD"], [16, "HR"],
+                    [32, "SD"], [64, "DT"], [128, "RX"], [256, "HT"],
+                    [512, "NC"], [1024, "FL"], [2048, "AT"], [4096, "SO"],
+                    [8192, "AP"], [16384, "PF"], [32768, "4K"], [65536, "5K"],
+                    [131072, "6K"], [262144, "7K"], [524288, "8K"],
+                    [1048576, "FI"], [2097152, "RD"], [4194304, "CN"],
+                    [8388608, "TP"], [16777216, "9K"], [33554432, "CO"],
+                    [67108864, "1K"], [134217728, "3K"], [268435456, "2K"],
+                    [536870912, "V2"], [1073741824, "MR"]
+                ];
+
+                const names = [];
+
+                for (const [bit, name] of table) {
+                    if ((value & bit) === 0) continue;
+                    // NC always carries DT, PF always carries SD.
+                    if (name === "DT" && (value & 512)) continue;
+                    if (name === "SD" && (value & 16384)) continue;
+
+                    names.push(name);
+                }
+
+                return names;
+            },
+            // Unix seconds, milliseconds and date strings all end up here.
+            asDate(value) {
+                if (value === null || value === undefined || value === "") return null;
+
+                if (typeof value === "number" || /^[0-9]+$/.test(String(value))) {
+                    const number = Number(value);
+
+                    if (!number) return null;
+                    // Anything this small has to be seconds, not millis.
+                    return new Date(number < 100000000000 ? number * 1000 : number);
+                }
+
                 const date = new Date(value);
-                return isNaN(date.getTime()) ? value : date.toLocaleDateString();
+
+                return isNaN(date.getTime()) ? null : date;
+            },
+            fmtRelative(value) {
+                const date = this.asDate(value);
+
+                if (!date) return "-";
+
+                const seconds = Math.max(0, (Date.now() - date.getTime()) / 1000);
+                const steps = [
+                    [31536000, "year"], [2592000, "month"], [604800, "week"],
+                    [86400, "day"], [3600, "hour"], [60, "minute"]
+                ];
+
+                for (const [span, name] of steps) {
+                    if (seconds >= span) {
+                        const count = Math.floor(seconds / span);
+                        return count + " " + name + (count === 1 ? "" : "s") + " ago";
+                    }
+                }
+
+                return "just now";
+            },
+            fmtDate(value) {
+                const date = this.asDate(value);
+
+                return date ? date.toLocaleDateString() : "-";
             },
             setTitle(text) {
                 const name = koneko.site && koneko.site.name ? koneko.site.name : "koneko";

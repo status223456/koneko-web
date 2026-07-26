@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.osuserverlist.koneko.api.BanchoApi;
+import com.osuserverlist.koneko.api.FastCache;
 import com.osuserverlist.koneko.auth.SessionStore;
 import com.osuserverlist.koneko.config.Env;
 import com.osuserverlist.koneko.config.SiteConfig;
@@ -45,10 +46,17 @@ public final class App {
         api = new BanchoApi(env);
 
         SessionStore.configure(env.getSessionTimeoutMinutes());
+        FastCache.configure(env.getFastLoadTtlSeconds(), env.getFastLoadStaleSeconds());
         KonekoVue.configure(env.isDev());
 
         logger.info("Starting koneko-web for <{}> at <{}>", site.getServer().getName(), env.getDomain());
         logger.info("Using the bancho.jar API at <{}>", api.getBaseUrl());
+
+        if (FastCache.enabled()) {
+            logger.info("FastLoad is on: {}s fresh, {}s stale, {}s in the browser",
+                    env.getFastLoadTtlSeconds(), env.getFastLoadStaleSeconds(),
+                    env.getFastLoadClientTtlSeconds());
+        }
 
         if (env.isDev()) {
             logger.warn("Running in DEV mode: vue files are re-read per request and cookies are not Secure");

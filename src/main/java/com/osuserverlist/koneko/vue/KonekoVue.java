@@ -16,6 +16,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -52,8 +54,16 @@ public final class KonekoVue {
     private static final Path DEV_ROOT = Paths.get("src", "main", "resources", "vue");
 
     private static final String LAYOUT = "layout.html";
-    private static final String COMPONENT_MARKER = "@componentRegistration";
-    private static final String ROUTE_MARKER = "@routeComponent";
+    // The markers are matched as whole lines. A marker name that appears
+    // inside a comment must never be substituted: the injected components
+    // carry their own </script>, so a replacement inside the layout script
+    // block would close it early and dump the rest of the file as text.
+    private static final Pattern COMPONENT_MARKER = marker("@componentRegistration");
+    private static final Pattern ROUTE_MARKER = marker("@routeComponent");
+
+    private static Pattern marker(String name) {
+        return Pattern.compile("^[ \\t]*" + Pattern.quote(name) + "[ \\t]*$", Pattern.MULTILINE);
+    }
 
     private static boolean devMode;
 
@@ -84,9 +94,8 @@ public final class KonekoVue {
     }
 
     private static void render(Context ctx, String component, int status) throws IOException {
-        String html = layout()
-                .replace(COMPONENT_MARKER, components())
-                .replace(ROUTE_MARKER, "<" + component + "></" + component + ">");
+        String html = replace(layout(), COMPONENT_MARKER, components());
+        html = replace(html, ROUTE_MARKER, "<" + component + "></" + component + ">");
 
         ctx.status(status);
         ctx.contentType("text/html; charset=utf-8");
@@ -102,12 +111,17 @@ public final class KonekoVue {
 
         String layout = readFile(LAYOUT);
 
-        if (!layout.contains(ROUTE_MARKER)) {
-            logger.warn("{} has no {} marker, pages will render empty", LAYOUT, ROUTE_MARKER);
+        if (!ROUTE_MARKER.matcher(layout).find()) {
+            logger.warn("{} has no route marker on its own line, pages will render empty", LAYOUT);
         }
 
         cachedLayout = layout;
         return layout;
+    }
+
+    /** Substitutes a whole marker line, treating the replacement literally. */
+    private static String replace(String source, Pattern marker, String replacement) {
+        return marker.matcher(source).replaceAll(Matcher.quoteReplacement(replacement));
     }
 
     private static String components() throws IOException {

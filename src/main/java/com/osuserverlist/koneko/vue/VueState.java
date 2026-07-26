@@ -30,8 +30,18 @@ public final class VueState {
         state.put("site", site());
         state.put("domain", App.env.getDomain());
         state.put("user", user(ctx));
+        state.put("fastload", fastload());
 
         return state;
+    }
+
+    /** FastLoad settings the browser needs to know about. */
+    private static Map<String, Object> fastload() {
+        Map<String, Object> fastload = new LinkedHashMap<>();
+        fastload.put("enabled", App.env.getFastLoadClientTtlSeconds() > 0);
+        fastload.put("clientTtl", App.env.getFastLoadClientTtlSeconds());
+
+        return fastload;
     }
 
     private static Map<String, Object> site() {

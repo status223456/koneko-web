@@ -7,6 +7,7 @@
 
         <nav class="nav-links">
             <a href="/">Home</a>
+            <a href="/beatmaps">Beatmaps</a>
             <a v-if="site.links && site.links.discord" :href="site.links.discord" target="_blank" rel="noopener">Discord</a>
             <a v-if="site.links && site.links.apiDocs" :href="site.links.apiDocs" target="_blank" rel="noopener">API</a>
 

@@ -27,6 +27,9 @@ public final class Env {
     private final int apiTimeoutSeconds;
     private final String apiClientId;
     private final String apiScopes;
+    private final int fastLoadTtlSeconds;
+    private final int fastLoadStaleSeconds;
+    private final int fastLoadClientTtlSeconds;
 
     private Env(Dotenv dotenv) {
         this.port = intOf(dotenv, "PORT", 8300);
@@ -38,12 +41,20 @@ public final class Env {
         this.apiTimeoutSeconds = intOf(dotenv, "API_TIMEOUT_SECONDS", 10);
         this.apiClientId = stringOf(dotenv, "API_CLIENT_ID", "koneko-web");
         this.apiScopes = stringOf(dotenv, "API_SCOPES", "identify profile");
+        this.fastLoadTtlSeconds = intOf(dotenv, "FASTLOAD_TTL_SECONDS", 15);
+        this.fastLoadStaleSeconds = intOf(dotenv, "FASTLOAD_STALE_SECONDS", 120);
+        this.fastLoadClientTtlSeconds = intOf(dotenv, "FASTLOAD_CLIENT_TTL_SECONDS", 600);
     }
 
     /** Loads {@code .env} from the working directory; a missing file is fine. */
     public static Env load() {
         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
         return new Env(dotenv);
+    }
+
+    /** FastLoad is off entirely when the server side window is zero. */
+    public boolean isFastLoadEnabled() {
+        return fastLoadTtlSeconds > 0 || fastLoadClientTtlSeconds > 0;
     }
 
     /** True while {@code LEVEL=DEV}: hot reloaded views, no Secure cookies. */

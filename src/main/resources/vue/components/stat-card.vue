@@ -10,10 +10,16 @@
         template: "#stat-card",
         props: {
             label: { type: String, required: true },
-            value: { default: null }
+            value: { default: null },
+            // Already formatted value, used for accuracy and the like.
+            text: { default: null }
         },
         computed: {
             display() {
+                if (this.text !== null && this.text !== undefined) {
+                    return this.text;
+                }
+
                 return this.value === null || this.value === undefined
                     ? "-"
                     : Number(this.value).toLocaleString();
