@@ -19,6 +19,7 @@ public final class ViewRoutes {
         config.routes.get("/", KonekoVue.component("home-view"));
         config.routes.get("/login", KonekoVue.component("login-view"));
         config.routes.get("/u/{identifier}", KonekoVue.component("profile-view"));
+        config.routes.get("/leaderboard", KonekoVue.component("leaderboard-view"));
         config.routes.get("/beatmaps", KonekoVue.component("beatmaps-view"));
         config.routes.get("/beatmapsets/{setId}", KonekoVue.component("beatmapset-view"));
 
