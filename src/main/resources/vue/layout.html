@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Loading...</title>
+    <link rel="stylesheet" href="/css/koneko.css">
+</head>
+<body>
+
+<main id="koneko-app" v-cloak>
+    @routeComponent
+</main>
+
+<!--
+    The page state is served as a normal blocking script, so the site texts and
+    the logged in user are on the page before Vue runs. See DataRoutes.
+-->
+<script src="/data/bootstrap.js"></script>
+
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+
+<script>
+    // The app has to exist before @componentRegistration runs: every
+    // component inlined below registers itself on this exact variable.
+    const koneko = window.__koneko || { site: {}, user: null, domain: "" };
+
+    const app = Vue.createApp({});
+
+    app.config.globalProperties.$koneko = koneko;
+
+    // Formatting helpers every component needs, kept in one place.
+    app.mixin({
+        methods: {
+            fmtNumber(value) {
+                return (value === null || value === undefined) ? "-" : Number(value).toLocaleString();
+            },
+            fmtDecimal(value, digits) {
+                if (value === null || value === undefined) return "-";
+                return Number(value).toFixed(digits === undefined ? 2 : digits);
+            },
+            fmtDate(value) {
+                if (!value) return "-";
+                const date = new Date(value);
+                return isNaN(date.getTime()) ? value : date.toLocaleDateString();
+            },
+            setTitle(text) {
+                const name = koneko.site && koneko.site.name ? koneko.site.name : "koneko";
+                document.title = text ? text + " | " + name : name;
+            }
+        }
+    });
+</script>
+
+@componentRegistration
+
+<script>
+    app.mount("#koneko-app");
+</script>
+
+</body>
+</html>

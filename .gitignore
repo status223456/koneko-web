@@ -1,0 +1,37 @@
+# ---- local configuration: never commit these ----
+.env
+.env.local
+.env.*.local
+config.yml
+nginx/*.local.conf
+
+# ---- build output ----
+build/
+out/
+bin/
+.gradle/
+
+# ---- logs and runtime junk ----
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# ---- editors ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+*.swp
+
+# ---- os ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- keep the gradle wrapper, it has to be in the repo ----
+!gradle/wrapper/gradle-wrapper.jar

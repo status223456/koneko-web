@@ -1,0 +1,42 @@
+# koneko-web site configuration.
+#
+# This file holds the texts of the site. It is re-read on every start, so a
+# restart is enough to change anything here - no rebuild needed.
+# The path is set with CONFIG_PATH in .env (default: config.yml).
+
+server:
+  # The name of your osu! server. This is NOT the name of this project:
+  # it shows up in the navigation bar, the page titles and the footer.
+  name: "Your Server"
+
+  # Optional one-liner under the server name in the navigation bar.
+  tagline: "play, submit, rank"
+
+  # The description on the front page. Plain text; line breaks are kept.
+  description: |
+    Write the description of your server here. Plain text, blank lines make
+    paragraphs.
+
+    This text lives in config.yml, so changing it only needs a restart.
+
+links:
+  # Discord invite. Leave empty to hide the button.
+  discord: "https://discord.gg/your-invite"
+
+  # Optional extra links. Empty values are hidden.
+  github: ""
+  api_docs: ""
+
+home:
+  # Show the online/registered/maps/scores counters.
+  show_stats: true
+
+  # Show the top players table and how many rows it has.
+  show_leaderboard: true
+  leaderboard_size: 5
+
+  # Game mode the front page leaderboard uses (0 = osu!standard).
+  leaderboard_mode: 0
+
+  # Show the "how to connect" block with the -devserver instructions.
+  show_connect_guide: true
