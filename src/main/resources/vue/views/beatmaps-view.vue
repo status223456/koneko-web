@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="beatmaps.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <section class="card">
             <h2>Beatmaps</h2>
 
@@ -68,6 +71,9 @@
                 <button class="button button-ghost" :disabled="!hasNext" @click="next">Next</button>
             </div>
         </template>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="beatmaps.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

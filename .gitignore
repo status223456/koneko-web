@@ -35,3 +35,8 @@ desktop.ini
 
 # ---- keep the gradle wrapper, it has to be in the repo ----
 !gradle/wrapper/gradle-wrapper.jar
+
+plugins/*.jar
+plugins/data/
+plugins/config/
+libs/

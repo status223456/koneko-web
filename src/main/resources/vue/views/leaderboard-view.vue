@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="leaderboard.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <section class="mode-bar">
             <div class="mode-variants">
                 <button class="mode-variant" :class="{ active: !variant }"
@@ -96,6 +99,9 @@
                 <button class="button button-ghost" :disabled="!hasNext" @click="page(1)">Next</button>
             </div>
         </section>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="leaderboard.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

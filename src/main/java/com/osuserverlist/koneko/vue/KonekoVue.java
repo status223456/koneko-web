@@ -16,6 +16,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -60,6 +62,10 @@ public final class KonekoVue {
     // block would close it early and dump the rest of the file as text.
     private static final Pattern COMPONENT_MARKER = marker("@componentRegistration");
     private static final Pattern ROUTE_MARKER = marker("@routeComponent");
+    // The two plugin markers. They are optional: a layout without them still
+    // renders, plugins simply cannot inject html into the shell.
+    private static final Pattern PLUGIN_HEAD_MARKER = marker("@pluginHead");
+    private static final Pattern PLUGIN_BODY_MARKER = marker("@pluginBody");
 
     private static Pattern marker(String name) {
         return Pattern.compile("^[ \\t]*" + Pattern.quote(name) + "[ \\t]*$", Pattern.MULTILINE);
@@ -69,6 +75,13 @@ public final class KonekoVue {
 
     private static volatile String cachedLayout;
     private static volatile String cachedComponents;
+
+    // Filled by the plugin host at boot. They stay null when no plugin is
+    // loaded, which keeps a plugin-free site byte for byte what it was.
+    private static volatile Supplier<String> pluginComponents;
+    private static volatile Supplier<String> pluginHead;
+    private static volatile Supplier<String> pluginBodyEnd;
+    private static volatile BiConsumer<Context, String> renderHook;
 
     private KonekoVue() {
     }
@@ -83,6 +96,24 @@ public final class KonekoVue {
         cachedComponents = null;
     }
 
+    /**
+     * Lets the plugin host contribute to the shell: the components of every
+     * plugin, plus whatever they asked to put in the head and at the end of the
+     * body.
+     */
+    public static void setPluginSources(Supplier<String> components, Supplier<String> head,
+            Supplier<String> bodyEnd) {
+
+        pluginComponents = components;
+        pluginHead = head;
+        pluginBodyEnd = bodyEnd;
+    }
+
+    /** Called on every page render, so plugins can see the traffic. */
+    public static void setRenderHook(BiConsumer<Context, String> hook) {
+        renderHook = hook;
+    }
+
     /** A handler rendering one component as a full page. */
     public static Handler component(String name) {
         return component(name, 200);
@@ -94,12 +125,33 @@ public final class KonekoVue {
     }
 
     private static void render(Context ctx, String component, int status) throws IOException {
-        String html = replace(layout(), COMPONENT_MARKER, components());
+        // Plugin components go after the core ones, so a plugin component may
+        // use any core component and can never replace one.
+        String html = replace(layout(), COMPONENT_MARKER, components() + fromPlugin(pluginComponents));
         html = replace(html, ROUTE_MARKER, "<" + component + "></" + component + ">");
+        html = replace(html, PLUGIN_HEAD_MARKER, fromPlugin(pluginHead));
+        html = replace(html, PLUGIN_BODY_MARKER, fromPlugin(pluginBodyEnd));
+
+        BiConsumer<Context, String> hook = renderHook;
+
+        if (hook != null) {
+            hook.accept(ctx, component);
+        }
 
         ctx.status(status);
         ctx.contentType("text/html; charset=utf-8");
         ctx.result(html);
+    }
+
+    /** A plugin contribution, or an empty string when there is none. */
+    private static String fromPlugin(Supplier<String> source) {
+        if (source == null) {
+            return "";
+        }
+
+        String value = source.get();
+
+        return value == null ? "" : value;
     }
 
     private static String layout() throws IOException {

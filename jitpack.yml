@@ -1,0 +1,20 @@
+# JitPack build of the plugin api.
+#
+# JitPack builds a tag or a commit of the GitHub repository and serves whatever
+# ends up in the local maven repository, so plugin authors can do:
+#
+#   repositories { maven("https://jitpack.io") }
+#   dependencies { compileOnly("com.github.OpenBancho:koneko-web:v0.1.0") }
+#
+# JitPack ships no JDK 25 of its own, so it is installed with sdkman first -
+# the site's toolchain asks for 25 and the build fails on anything older.
+
+jdk:
+  - openjdk21
+
+before_install:
+  - sdk install java 25-open < /dev/null
+  - sdk use java 25-open
+
+install:
+  - ./gradlew publishToMavenLocal -x test --no-daemon

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.api.FastCache;
+import com.osuserverlist.koneko.plugin.PluginBootstrap;
 import com.osuserverlist.koneko.vue.VueState;
 
 import io.javalin.config.JavalinConfig;
@@ -98,7 +99,10 @@ public final class DataRoutes {
      */
     private static void home(Context ctx) {
         fastHeaders(ctx);
-        ctx.json(FastCache.get("home", DataRoutes::homeBody));
+        // Every answer passes through the plugins, which may add fields to it.
+        // The cached body is copied first, so nothing a plugin writes ends up
+        // in the cache.
+        ctx.json(PluginBootstrap.enrich(ctx, "home", FastCache.get("home", DataRoutes::homeBody)));
     }
 
     private static Map<String, Object> homeBody() {
@@ -136,7 +140,7 @@ public final class DataRoutes {
         }
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "profile", body));
     }
 
     private static Map<String, Object> profileBody(String identifier, int mode) {
@@ -230,7 +234,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "scores", body));
     }
 
     /**
@@ -260,7 +264,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "beatmaps", body));
     }
 
     /** One beatmap set with all of its difficulties. */
@@ -275,7 +279,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "beatmapset", body));
     }
 
     /**
@@ -324,7 +328,7 @@ public final class DataRoutes {
         });
 
         fastHeaders(ctx);
-        ctx.json(body);
+        ctx.json(PluginBootstrap.enrich(ctx, "leaderboard", body));
     }
 
     /**

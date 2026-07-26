@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="profile.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <p class="muted" v-if="loading">Loading the profile...</p>
 
         <section class="card" v-else-if="error">
@@ -169,6 +172,9 @@
                 </div>
             </section>
         </template>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="profile.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

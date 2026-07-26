@@ -9,6 +9,8 @@ import com.osuserverlist.koneko.auth.SessionStore;
 import com.osuserverlist.koneko.config.Env;
 import com.osuserverlist.koneko.config.SiteConfig;
 import com.osuserverlist.koneko.config.SiteConfigLoader;
+import com.osuserverlist.koneko.plugin.PluginRoutes;
+import com.osuserverlist.koneko.plugin.PluginService;
 import com.osuserverlist.koneko.routes.AuthRoutes;
 import com.osuserverlist.koneko.routes.DataRoutes;
 import com.osuserverlist.koneko.routes.ViewRoutes;
@@ -62,6 +64,13 @@ public final class App {
             logger.warn("Running in DEV mode: vue files are re-read per request and cookies are not Secure");
         }
 
+        // The plugins are loaded before the server exists, because Javalin 7
+        // takes its routes at creation time: a plugin page has to be known by
+        // then or it can never be mounted.
+        PluginService.boot(env, site);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(PluginService::shutdown, "koneko-plugins-stop"));
+
         // Javalin 7 registers everything through the config object, so all the
         // routes are mounted inside create().
         Javalin app = Javalin.create(config -> {
@@ -79,12 +88,18 @@ public final class App {
             AuthRoutes.register(config);
             DataRoutes.register(config);
 
+            // Last, so a plugin can never shadow a core route.
+            PluginRoutes.register(config);
+
             if (env.isDev()) {
                 config.bundledPlugins.enableDevLogging();
             }
         });
 
         app.start(env.getPort());
+
+        // Background jobs only start once the site is actually serving.
+        PluginService.afterStart();
 
         logger.info("koneko-web is listening on port <{}>", env.getPort());
     }

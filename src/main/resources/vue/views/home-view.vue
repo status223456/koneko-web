@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="home.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <div class="announcement" v-if="home.announcement">
             <span class="announcement-icon">i</span>
             <span>{{ home.announcement }}</span>
@@ -112,6 +115,9 @@
             <h2>About {{ site.name }}</h2>
             <p class="hero-description">{{ site.description }}</p>
         </section>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="home.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>

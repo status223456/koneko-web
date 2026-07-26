@@ -2,6 +2,9 @@
     <div class="page">
         <site-nav></site-nav>
 
+        <koneko-slot name="beatmapset.top"></koneko-slot>
+        <koneko-slot name="page.top"></koneko-slot>
+
         <p class="muted" v-if="loading">Loading the beatmap...</p>
 
         <section class="card" v-else-if="error">
@@ -96,6 +99,9 @@
                 </section>
             </template>
         </template>
+
+                <koneko-slot name="page.bottom"></koneko-slot>
+        <koneko-slot name="beatmapset.bottom"></koneko-slot>
 
         <site-footer></site-footer>
     </div>
