@@ -1,12 +1,16 @@
 :root {
-    --bg: #14121a;
-    --bg-card: #1e1b26;
-    --bg-soft: #262232;
+    --bg: #0d0b14;
+    --bg-alt: #100d1a;
+    --bg-card: #17142400;
+    --bg-panel: #171425;
+    --bg-soft: #1f1b30;
     --text: #ece9f3;
-    --muted: #9b93ad;
-    --accent: #ff66aa;
-    --accent-dark: #d94f8c;
-    --border: #302b3d;
+    --muted: #948ca8;
+    --accent: #a855f7;
+    --accent-soft: #c084fc;
+    --accent-dark: #7c3aed;
+    --border: #241e36;
+    --line: #241e36;
 }
 
 * {
@@ -704,11 +708,16 @@ form input:focus {
     color: var(--accent);
 }
 
+/* flag-icons paints the flag as a background image, so the element is
+   empty and only needs a size, a rounding and something to lift it off
+   the dark background. */
 .country-tag {
-    padding: 0 4px;
-    border-radius: 3px;
-    background: #1b2836;
-    font-size: 10px;
+    display: inline-block;
+    margin-right: 6px;
+    border-radius: 2px;
+    vertical-align: -2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+    cursor: default;
 }
 
 .grade-counts {
@@ -1087,4 +1096,871 @@ form input:focus {
 .mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
+}
+
+/* ----------------------------------------------------------- leaderboard */
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 18px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.field select {
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #0d1520;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+}
+
+.field select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.table th.numeric,
+.table td.numeric {
+    text-align: right;
+}
+
+.rank-cell {
+    color: var(--muted);
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    font-size: 12px;
+}
+
+/* --------------------------------------------------------- country filter */
+
+.field-wide {
+    flex: 1 1 100%;
+}
+
+.flag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.flag-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #0d1520;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.flag-chip:hover {
+    color: var(--text);
+    border-color: #2b3b4d;
+}
+
+.flag-chip.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: #131f2e;
+}
+
+.flag-chip .fi {
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.flag-count {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Theme. Everything below overrides the plain styles above, so the markup of
+   the older pages did not have to change. Two tricks are used repeatedly:
+
+   - full bleed bands inside the centred .page column, done with
+     "margin: 0 calc(50% - 50vw)" plus the mirrored padding;
+   - purple gradients instead of flat fills, which is what carries the look.
+   ========================================================================== */
+
+body {
+    font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+        radial-gradient(1200px 600px at 50% -200px, #1d1533 0%, transparent 70%),
+        var(--bg);
+    background-attachment: fixed;
+    letter-spacing: 0.01em;
+}
+
+/* The column is a flex box as tall as the window, which is what lets the
+   footer sit at the bottom of a short page and right after the content of a
+   long one. */
+.page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 1120px;
+    padding: 0 20px;
+}
+
+/* ------------------------------------------------------------- navigation */
+
+.nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: 0 calc(50% - 50vw);
+    padding: 0 calc(50vw - 50%);
+    border-bottom: 1px solid var(--border);
+    background: rgba(13, 11, 20, 0.92);
+    backdrop-filter: blur(10px);
+}
+
+.nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 12px 0;
+}
+
+.nav-brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--accent-soft), var(--accent-dark));
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35), 0 6px 18px rgba(124, 58, 237, 0.35);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+}
+
+.nav-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.nav-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.nav-name {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.nav-tagline {
+    font-size: 11px;
+}
+
+.nav-links {
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+}
+
+.nav-links a {
+    padding: 7px 12px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    color: var(--text);
+    background: rgba(168, 85, 247, 0.12);
+    text-decoration: none;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.nav-user:hover {
+    text-decoration: none;
+    color: var(--accent-soft);
+}
+
+.nav-user-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-soft);
+}
+
+/* ----------------------------------------------------------- announcement */
+
+.announcement {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 calc(50% - 50vw);
+    padding: 9px calc(50vw - 50%);
+    background: linear-gradient(90deg, #1a1636, #221a44);
+    border-bottom: 1px solid var(--border);
+    color: #cfc6e6;
+    font-size: 12.5px;
+}
+
+.announcement-icon {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-soft);
+    color: var(--accent-soft);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.hero-band {
+    position: relative;
+    margin: 0 calc(50% - 50vw) 0;
+    padding: 72px calc(50vw - 50%) 76px;
+    background-color: #150f26;
+    background-position: center;
+    background-size: cover;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* The overlay is what keeps a bright screenshot readable behind the text. */
+.hero-band::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(900px 380px at 50% 40%, rgba(124, 58, 237, 0.35), transparent 70%),
+        linear-gradient(180deg, rgba(13, 11, 20, 0.55), rgba(13, 11, 20, 0.92));
+}
+
+.hero-inner {
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.hero-logo {
+    display: grid;
+    place-items: center;
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 22px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--accent-soft), var(--accent-dark));
+    box-shadow: 0 0 0 6px rgba(168, 85, 247, 0.12), 0 18px 40px rgba(124, 58, 237, 0.4);
+    font-size: 26px;
+    font-weight: 800;
+    overflow: hidden;
+}
+
+.hero-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-title {
+    margin: 0 0 10px;
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.hero-tagline {
+    margin: 0 0 26px;
+    color: #c3bad6;
+    font-size: 15px;
+}
+
+.hero-band .hero-actions {
+    justify-content: center;
+}
+
+.hero-description {
+    white-space: pre-line;
+    color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(140deg, var(--accent), var(--accent-dark));
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 8px 22px rgba(124, 58, 237, 0.32);
+}
+
+.button:hover {
+    filter: brightness(1.08);
+    text-decoration: none;
+}
+
+.button-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text);
+    box-shadow: none;
+}
+
+.button-ghost:hover {
+    background: rgba(168, 85, 247, 0.16);
+    border-color: rgba(168, 85, 247, 0.45);
+}
+
+.button-small {
+    padding: 6px 14px;
+    font-size: 12.5px;
+}
+
+/* -------------------------------------------------------------- stat strip */
+
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin: 0 calc(50% - 50vw) 40px;
+    padding: 22px calc(50vw - 50%);
+    background: linear-gradient(180deg, #14111f, #100d1a);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+
+.stat-strip-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 12px;
+    border-right: 1px solid var(--border);
+}
+
+.stat-strip-item:last-child {
+    border-right: none;
+}
+
+.stat-strip-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.stat-strip-label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* -------------------------------------------------------------------- tiles */
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 26px 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #171425, #131020);
+    color: var(--text);
+    text-align: center;
+    transition: border-color 0.15s, transform 0.15s;
+}
+
+.tile:hover {
+    border-color: rgba(168, 85, 247, 0.5);
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.tile-icon {
+    color: var(--accent-soft);
+}
+
+.tile-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.tile-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.tile-text {
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+/* -------------------------------------------------------------------- cards */
+
+.card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #171425, #131020);
+    padding: 22px;
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.stat-card,
+.mapset-card,
+.filter-input,
+.filter-select,
+.field select {
+    border-radius: 10px;
+}
+
+/* ------------------------------------------------------------------- tables */
+
+.table th {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--border);
+}
+
+.table td {
+    border-bottom: 1px solid rgba(36, 30, 54, 0.7);
+    font-size: 13px;
+}
+
+.table tbody tr:hover td {
+    background: rgba(168, 85, 247, 0.06);
+}
+
+/* --------------------------------------------------------- mode segments */
+
+.mode-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 22px 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+.mode-tabs,
+.mode-variants {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 6px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #131020;
+}
+
+.mode-tab,
+.mode-variant {
+    padding: 9px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.mode-tab:hover:not(:disabled),
+.mode-variant:hover:not(:disabled) {
+    color: var(--text);
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.mode-tab.active,
+.mode-variant.active {
+    background: linear-gradient(140deg, var(--accent), var(--accent-dark));
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+}
+
+.mode-tab:disabled,
+.mode-variant:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------ profile */
+
+.profile-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.profile-top {
+    padding: 24px;
+    background: linear-gradient(120deg, rgba(124, 58, 237, 0.22), transparent 60%);
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--border), 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.profile-name {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.profile-card > *:not(.profile-top) {
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.profile-rank-value {
+    color: var(--accent-soft);
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------------- footer */
+
+.footer {
+    display: block;
+    margin: 48px calc(50% - 50vw) 0;
+    padding: 24px calc(50vw - 50%);
+    border-top: 1px solid var(--border);
+    background: #0b0912;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-name {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.footer-links a {
+    color: var(--muted);
+}
+
+.footer-links a:hover {
+    color: var(--accent-soft);
+    text-decoration: none;
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+@media (max-width: 720px) {
+    .nav-inner {
+        flex-wrap: wrap;
+    }
+
+    .nav-links {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+
+    .hero-title {
+        font-size: 1.9rem;
+    }
+
+    .stat-strip-item {
+        border-right: none;
+    }
+
+    .mode-tabs,
+    .mode-variants {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+    }
+}
+
+/* ==========================================================================
+   Layout fixes, kept last on purpose: these rules have to win over the theme
+   block above.
+
+   The full bleed bands are measured in vw, and vw counts the vertical
+   scrollbar as part of the window. Every band therefore came out one
+   scrollbar wider than the page, which is what produced the horizontal
+   scrollbar.
+
+   --bleed writes the trick once, and "overflow-x: clip" removes whatever is
+   still left over. clip is used rather than hidden on purpose: hidden turns
+   the element into a scroll container and would break the sticky navigation.
+   ========================================================================== */
+
+:root {
+    --bleed: calc(50% - 50vw);
+}
+
+html {
+    overflow-x: clip;
+    /* Room for the scrollbar at all times, so the layout does not jump
+       sideways when a page grows past one screen. */
+    scrollbar-gutter: stable;
+}
+
+body {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
+.nav,
+.announcement,
+.hero-band,
+.stat-strip,
+.footer {
+    margin-left: var(--bleed);
+    margin-right: var(--bleed);
+    padding-left: calc(-1 * var(--bleed));
+    padding-right: calc(-1 * var(--bleed));
+}
+
+/* auto on the top margin eats the free space of a short page, so the footer
+   always ends up against the bottom edge. */
+.page > .footer {
+    margin-top: auto;
+    margin-bottom: 0;
+    padding-top: 32px;
+    padding-bottom: 28px;
+}
+
+/* The last block before the footer keeps its breathing room. */
+.page > .footer:not(:nth-child(2)) {
+    border-top: 1px solid var(--border);
+}
+
+/* A wide table scrolls inside its own card instead of pushing the whole page
+   sideways on a narrow screen. */
+.card {
+    overflow-x: auto;
+}
+
+.table {
+    min-width: 100%;
+}
+
+/* ==========================================================================
+   Score row banners
+
+   The set banner lies behind the row and is faded with a mask instead of a
+   plain opacity, so it is invisible on the left where the grade and the map
+   title are and gets gradually stronger towards the right. The mask affects
+   only the image layer, so the text on top keeps full contrast.
+   ========================================================================== */
+
+.score-row {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px 14px;
+    /* The separator is drawn as a background so it does not sit on top of the
+       rounded corners of the banner. */
+    border-bottom: none;
+    box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.score-row:last-child {
+    box-shadow: none;
+}
+
+.score-row:hover .score-cover {
+    opacity: 1;
+}
+
+.score-cover {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.85;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    /* Transparent on the left, then a little denser at every step. */
+    -webkit-mask-image: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.08) 30%,
+        rgba(0, 0, 0, 0.22) 55%,
+        rgba(0, 0, 0, 0.42) 78%,
+        rgba(0, 0, 0, 0.62) 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.08) 30%,
+        rgba(0, 0, 0, 0.22) 55%,
+        rgba(0, 0, 0, 0.42) 78%,
+        rgba(0, 0, 0, 0.62) 100%
+    );
+}
+
+/* Everything except the banner is lifted above it. */
+.score-row > *:not(.score-cover) {
+    position: relative;
+    z-index: 1;
+}
+
+/* A dark halo keeps the numbers readable over a bright banner. */
+.score-row .score-numbers,
+.score-row .score-meta {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+/* ==========================================================================
+   Medals
+
+   A plain wrapping grid of icons. The name and the description are a tooltip
+   of our own rather than the title attribute, because the browser one takes
+   about a second to appear and cannot be styled.
+   ========================================================================== */
+
+.medals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.medal {
+    position: relative;
+    line-height: 0;
+}
+
+.medal-icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    transition: transform 0.12s ease;
+}
+
+.medal:hover .medal-icon {
+    transform: scale(1.08);
+}
+
+.medal-tip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 5;
+    display: none;
+    width: 220px;
+    transform: translateX(-50%);
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+    line-height: 1.35;
+    text-align: center;
+}
+
+.medal:hover .medal-tip {
+    display: block;
+}
+
+.medal-name {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.medal-desc {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 12px;
 }
