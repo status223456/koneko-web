@@ -92,11 +92,12 @@ final class Contributions {
 
     /** Paths the core site owns, so a plugin page cannot shadow one. */
     static final List<String> RESERVED_PREFIXES = List.of(
-            "/data/", "/auth/", "/css/", "/js/", "/img/", "/plugin-assets/", "/plugins/");
+            "/data/", "/auth/", "/account/", "/css/", "/js/", "/img/",
+            "/plugin-assets/", "/plugins/");
 
     /** Exact paths of the core pages. */
     static final List<String> RESERVED_PATHS = List.of(
-            "/", "/login", "/me", "/leaderboard", "/beatmaps");
+            "/", "/login", "/me", "/leaderboard", "/beatmaps", "/players", "/settings");
 
     boolean isReserved(String path) {
         if (path == null || !path.startsWith("/")) {

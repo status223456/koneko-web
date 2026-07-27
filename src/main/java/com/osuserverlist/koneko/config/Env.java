@@ -25,8 +25,12 @@ public final class Env {
     /** The site texts. Not configurable: the location is part of the layout. */
     public static final String CONFIG_PATH = CONFIG_DIR + "/config.yml";
 
-    /** Scopes asked for at login. identify = read own profile, profile = edit it. */
-    public static final String API_SCOPES = "identify profile";
+    /**
+     * Scopes asked for at login. identify = read own profile, profile = edit
+     * it, which is what the settings page needs. Overridable through
+     * {@code API_SCOPES} in {@code .env}.
+     */
+    public static final String DEFAULT_API_SCOPES = "identify profile";
 
     /** Timeout of a single call to the bancho.jar API. */
     public static final int API_TIMEOUT_SECONDS = 10;

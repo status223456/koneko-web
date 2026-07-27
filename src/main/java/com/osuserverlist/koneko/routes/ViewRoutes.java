@@ -22,6 +22,13 @@ public final class ViewRoutes {
         config.routes.get("/leaderboard", KonekoVue.component("leaderboard-view"));
         config.routes.get("/beatmaps", KonekoVue.component("beatmaps-view"));
         config.routes.get("/beatmapsets/{setId}", KonekoVue.component("beatmapset-view"));
+        // Not in the navigation: reached through the search box in the bar.
+        config.routes.get("/players", KonekoVue.component("players-view"));
+        config.routes.get("/scores/{scoreId}", KonekoVue.component("score-view"));
+
+        // Only renders forms; what may actually be changed is decided by the
+        // API when the form is submitted.
+        config.routes.get("/settings", KonekoVue.component("settings-view"));
 
         // Convenience route so the navigation bar can link to a profile
         // without knowing the id up front.

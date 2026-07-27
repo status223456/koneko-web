@@ -12,6 +12,7 @@ import com.osuserverlist.koneko.config.SiteConfigLoader;
 import com.osuserverlist.koneko.modules.Logging.KonekoWebLogger;
 import com.osuserverlist.koneko.plugin.PluginRoutes;
 import com.osuserverlist.koneko.plugin.PluginService;
+import com.osuserverlist.koneko.routes.AccountRoutes;
 import com.osuserverlist.koneko.routes.AuthRoutes;
 import com.osuserverlist.koneko.routes.DataRoutes;
 import com.osuserverlist.koneko.routes.ViewRoutes;
@@ -88,6 +89,10 @@ public final class App {
             ViewRoutes.register(config);
             AuthRoutes.register(config);
             DataRoutes.register(config);
+
+            // The one path that needs the player's own access token, which
+            // never leaves this service.
+            AccountRoutes.register(config);
 
             // Last, so a plugin can never shadow a core route.
             PluginRoutes.register(config);

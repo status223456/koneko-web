@@ -58,7 +58,7 @@ public final class AuthRoutes {
         }
 
         try {
-            TokenPair tokens = App.api.passwordGrant(username.trim(), password, Env.API_SCOPES);
+            TokenPair tokens = App.api.passwordGrant(username.trim(), password, Env.DEFAULT_API_SCOPES);
             JsonNode info = App.api.userInfo(tokens.getAccessToken());
             JsonNode user = info.path("user");
 

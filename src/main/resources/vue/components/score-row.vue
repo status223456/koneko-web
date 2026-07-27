@@ -27,6 +27,11 @@
         </div>
 
         <div class="score-numbers">
+            <!-- The whole row is not a link, because the map title inside it
+                 already is one; this keeps the play itself reachable. -->
+            <a class="score-permalink" v-if="score.id" :href="'/scores/' + score.id"
+                title="Score details">details</a>
+
             <div class="score-pp">{{ fmtDecimal(score.pp, 0) }}<span class="unit">pp</span></div>
             <!-- Only the best scores are weighted, the rest have no index. -->
             <div class="score-weight" v-if="weighted !== null">

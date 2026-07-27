@@ -189,6 +189,27 @@
             </section>
 
             <section class="card">
+                <h2>Most played</h2>
+
+                <div class="skeleton-rows" v-if="pending.mostPlayed">
+                    <div class="skeleton skeleton-row" v-for="n in 3" :key="n"></div>
+                </div>
+
+                <p class="muted" v-else-if="!mostPlayed.length">
+                    No plays in this mode yet.
+                </p>
+
+                <div class="played" v-for="map in mostPlayed" :key="map.map_id" v-else>
+                    <a class="played-title" :href="'/beatmapsets/' + map.set_id">
+                        {{ map.artist }} - {{ map.title }}
+                        <span class="muted">[{{ map.version }}]</span>
+                    </a>
+
+                    <span class="played-count">{{ fmtNumber(map.playcount) }}x</span>
+                </div>
+            </section>
+
+            <section class="card">
                 <h2>Submitted beatmaps</h2>
 
                 <div class="skeleton-rows" v-if="pending.beatmapsets">
@@ -239,6 +260,7 @@
                 recent: true,
                 first: true,
                 playcounts: true,
+                mostPlayed: true,
                 medals: true,
                 beatmapsets: true
             },
@@ -260,6 +282,7 @@
             recent: [],
             firstPlaces: [],
             playcounts: [],
+            mostPlayed: [],
             beatmapsets: [],
             achievements: [],
             // Medals that exist on the server, reported by the API so the
@@ -501,6 +524,7 @@
                     this.pending.recent = true;
                     this.pending.first = true;
                     this.pending.playcounts = true;
+                    this.pending.mostPlayed = true;
                     this.pending.medals = true;
                     this.pending.beatmapsets = true;
                 }
@@ -538,6 +562,12 @@
                     Object.assign({}, who, { mode: this.mode, months: this.playcountMonths }),
                     answer => {
                         this.playcounts = (answer && answer.months) || [];
+                    });
+
+                this.loadSection(run, "mostPlayed", "mostPlayed", "get_player_most_played",
+                    Object.assign({}, who, paging),
+                    answer => {
+                        this.mostPlayed = (answer && answer.results) || [];
                     });
 
                 // Medals belong to the player, not to a mode.

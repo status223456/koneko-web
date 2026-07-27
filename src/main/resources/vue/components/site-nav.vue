@@ -24,12 +24,21 @@
                 <koneko-slot name="nav.links"></koneko-slot>
             </nav>
 
+            <!-- A player search in the bar itself: looking someone up is the
+                 thing people come here to do most often, and it should not need
+                 a page of its own to start. -->
+            <form class="nav-search" @submit.prevent="searchPlayers">
+                <input class="nav-search-input" type="search" v-model="query"
+                    placeholder="Find a player" aria-label="Find a player">
+            </form>
+
             <div class="nav-actions">
                 <template v-if="user">
                     <a class="nav-user" :href="'/u/' + user.id">
                         <img class="nav-user-avatar" :src="avatar" :alt="user.name">
                         <span>{{ user.name }}</span>
                     </a>
+                    <a class="button button-ghost button-small" href="/settings">Settings</a>
                     <button class="button button-ghost button-small" @click="logout">Log out</button>
                 </template>
 
@@ -44,6 +53,9 @@
 <script>
     app.component("site-nav", {
         template: "#site-nav",
+        data: () => ({
+            query: ""
+        }),
         computed: {
             site() {
                 return this.$koneko.site || {};
@@ -99,6 +111,15 @@
                 return core.concat(contributed)
                     .filter(item => item.href && hidden.indexOf(item.id) === -1)
                     .sort((left, right) => (left.order || 0) - (right.order || 0));
+            },
+            // An empty box still goes to the directory: that page lists
+            // everyone, so it is a useful place to end up either way.
+            searchPlayers() {
+                const query = this.query.trim();
+
+                window.location.href = query
+                    ? "/players?q=" + encodeURIComponent(query)
+                    : "/players";
             },
             async logout() {
                 await fetch("/auth/logout", { method: "POST" });

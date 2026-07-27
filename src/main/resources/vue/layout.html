@@ -140,6 +140,43 @@
                     return null;
                 }
             },
+            /**
+             * A call to this service instead of the API: the account routes,
+             * which need the access token that lives in the session here. The
+             * cookie is sent, the token is never seen by the browser, and the
+             * answer is the API's own body.
+             *
+             * Throws with .status and .message set to what the API said, so a
+             * form can print "wrong password" instead of a status code.
+             */
+            async session(method, path, body) {
+                const response = await fetch(path, {
+                    method: method,
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "same-origin",
+                    body: body === undefined ? undefined : JSON.stringify(body)
+                });
+
+                let answer = null;
+
+                try {
+                    answer = await response.json();
+                } catch (e) {
+                    answer = null;
+                }
+
+                if (!response.ok) {
+                    const error = new Error((answer && answer.status)
+                        || "The server could not be reached.");
+                    error.status = response.status;
+                    throw error;
+                }
+
+                return answer;
+            },
             // The player of a profile url: a numeric segment is an id,
             // anything else a name, the way the API expects it.
             apiWho(identifier) {

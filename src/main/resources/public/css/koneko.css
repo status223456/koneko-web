@@ -2170,3 +2170,430 @@ body {
         height: 96px;
     }
 }
+
+/* --- Player search in the navigation ------------------------------------- */
+
+.nav-search {
+    margin-left: auto;
+}
+
+.nav-search-input {
+    width: 180px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.nav-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(168, 85, 247, 0.08);
+}
+
+/* --- Player list ---------------------------------------------------------- */
+
+.player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.player-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.player-chip:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.player-chip-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex: none;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.player-chip-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.player-chip-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-chip-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* --- Most played, on the profile ----------------------------------------- */
+
+.played {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.played:last-child {
+    border-bottom: none;
+}
+
+.played-title {
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.played-title:hover {
+    color: var(--accent);
+}
+
+.played-count {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* --- One score in full --------------------------------------------------- */
+
+.score-permalink {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.score-permalink:hover {
+    color: var(--accent);
+}
+
+.score-hero-map {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.score-hero-cover {
+    width: 150px;
+    height: 70px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex: none;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.score-hero-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.score-hero-text h2 {
+    margin: 0 0 4px;
+}
+
+.score-hero-text a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.score-hero-text a:hover {
+    color: var(--accent);
+}
+
+.score-hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+}
+
+.score-hero-grade {
+    flex: none;
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.score-figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin: 12px 0 18px;
+}
+
+.score-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.score-figure-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.score-figure-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.hit-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.hit-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 62px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.hit-count small {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+/* The colours osu! itself uses for the judgements. */
+.hit-300 { color: #66ccff; }
+.hit-geki { color: #99e5ff; }
+.hit-100 { color: #88e57e; }
+.hit-katu { color: #b6f0ac; }
+.hit-50 { color: #f5d47a; }
+.hit-miss { color: #ff7a8a; }
+
+.map-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.map-stats b {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.score-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* --- Forms: the settings page --------------------------------------------- */
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 14px;
+    max-width: 520px;
+}
+
+/* The filter styles were written for the filter bars, where fields sit next to
+   each other: .filter-input carries flex: 1 1 260px so a field can grow in a
+   row. A form field is a column, and in a column that 260px is a height -
+   which is what made these boxes tall and empty. Inside a form the inputs are
+   plain full width boxes instead. */
+.stack .filter-input,
+.stack select,
+.stack textarea {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-soft);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+}
+
+.stack .filter-input:focus,
+.stack select:focus,
+.stack textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.stack select {
+    /* Without this a select keeps the platform look, which is a light grey
+       box on a dark card. */
+    appearance: none;
+    padding-right: 34px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.stack textarea {
+    min-height: 96px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.stack .button {
+    align-self: flex-start;
+}
+
+.checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.form-note,
+.form-error {
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.form-note {
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    background: rgba(74, 222, 128, 0.08);
+    color: #b7f5cd;
+}
+
+.form-error {
+    border: 1px solid rgba(255, 122, 138, 0.4);
+    background: rgba(255, 122, 138, 0.08);
+    color: #ffc3cb;
+}
+
+/* Anything on a red card cannot be undone. */
+.card-danger {
+    border-color: rgba(255, 122, 138, 0.35);
+}
+
+.button-danger {
+    border-color: rgba(255, 122, 138, 0.5);
+    background: rgba(255, 122, 138, 0.12);
+    color: #ffc3cb;
+}
+
+.button-danger:hover:not(:disabled) {
+    background: rgba(255, 122, 138, 0.2);
+}
+
+.button-quiet {
+    background: transparent;
+}
+
+.badge-quiet {
+    border-color: var(--line);
+    background: transparent;
+    color: var(--muted);
+}
+
+.badge-warn {
+    border-color: rgba(245, 212, 122, 0.45);
+    background: rgba(245, 212, 122, 0.1);
+    color: #f7e3a8;
+}
+
+.settings-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.settings-avatar {
+    width: 76px;
+    height: 76px;
+    border-radius: 16px;
+    object-fit: cover;
+    flex: none;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-head h2 {
+    margin: 0 0 4px;
+}
+
+.settings-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 4px;
+}
+
+@media (max-width: 720px) {
+    .nav-search,
+    .nav-search-input {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .score-hero-map,
+    .settings-head {
+        flex-wrap: wrap;
+    }
+
+    .score-hero-cover {
+        width: 100%;
+        height: 110px;
+    }
+}
