@@ -1,14 +1,37 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss} | %-5level | %logger{0} | %msg%n</pattern>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <conversionRule conversionWord="loggerHighlighter" converterClass="com.osuserverlist.koneko.modules.Logging$LoggerHighlighter" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>%loggerHighlighter(%-5level) | %yellow(%d{yyyy-MM-dd HH:mm:ss}) | %loggerHighlighter(%msg) %n%loggerHighlighter(%ex)</pattern>
         </encoder>
     </appender>
 
-    <logger name="org.eclipse.jetty" level="WARN"/>
-    <logger name="io.javalin" level="INFO"/>
+
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- File name is controlled by the rollingPolicy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- File path with date format -->
+            <fileNamePattern>logs/koneko-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory> <!-- Keeps log files for the last 30 days -->
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %thread %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Silence Jetty -->
+    <logger name="org.eclipse.jetty" level="ERROR" additivity="false"/>
+
+    <!-- Silence Javalin -->
+    <logger name="io.javalin" level="ERROR" additivity="false"/>
 
     <root level="INFO">
-        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ROLLING_FILE" />
     </root>
 </configuration>

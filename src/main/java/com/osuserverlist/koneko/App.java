@@ -9,6 +9,7 @@ import com.osuserverlist.koneko.auth.SessionStore;
 import com.osuserverlist.koneko.config.Env;
 import com.osuserverlist.koneko.config.SiteConfig;
 import com.osuserverlist.koneko.config.SiteConfigLoader;
+import com.osuserverlist.koneko.modules.Logging.KonekoWebLogger;
 import com.osuserverlist.koneko.plugin.PluginRoutes;
 import com.osuserverlist.koneko.plugin.PluginService;
 import com.osuserverlist.koneko.routes.AuthRoutes;
@@ -91,9 +92,7 @@ public final class App {
             // Last, so a plugin can never shadow a core route.
             PluginRoutes.register(config);
 
-            if (env.isDev()) {
-                config.bundledPlugins.enableDevLogging();
-            }
+            config.requestLogger.http(new KonekoWebLogger());
         });
 
         app.start(env.getPort());
