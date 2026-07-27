@@ -2,7 +2,8 @@
 .env
 .env.local
 .env.*.local
-config.yml
+.config/config.yml
+.config/plugins/
 nginx/*.local.conf
 
 # ---- build output ----
@@ -38,5 +39,4 @@ desktop.ini
 
 plugins/*.jar
 plugins/data/
-plugins/config/
 libs/

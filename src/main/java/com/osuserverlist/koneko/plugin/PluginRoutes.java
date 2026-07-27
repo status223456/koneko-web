@@ -35,6 +35,9 @@ public final class PluginRoutes {
 
     private static final Logger logger = LoggerFactory.getLogger("Plugins");
 
+    /** How long a browser may cache a file served from a plugin jar. */
+    private static final int ASSET_CACHE_SECONDS = 3600;
+
     private PluginRoutes() {
     }
 
@@ -201,7 +204,7 @@ public final class PluginRoutes {
         if (App.env.isDev()) {
             ctx.header("Cache-Control", "no-store");
         } else {
-            ctx.header("Cache-Control", "public, max-age=" + App.env.getPluginAssetTtlSeconds());
+            ctx.header("Cache-Control", "public, max-age=" + ASSET_CACHE_SECONDS);
         }
 
         ctx.result(bytes);

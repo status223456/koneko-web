@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * <ol>
  *   <li>the {@code plugins.settings.{pluginId}} block of {@code config.yml};</li>
- *   <li>{@code plugins/config/{pluginId}.yml} next to the jars.</li>
+ *   <li>{@code .config/plugins/{pluginId}.yml}.</li>
  * </ol>
  *
  * <p>Dotted keys walk into nested maps, so {@code settings.string("discord.channel", "")}

@@ -17,7 +17,7 @@ import com.osuserverlist.koneko.plugin.api.PluginSettings;
 
 /**
  * Settings of one plugin, merged from {@code config.yml} and the plugin's own
- * yml file next to the jars, the file winning.
+ * yml file in {@code .config/plugins}, the file winning.
  *
  * <p>Reading is deliberately forgiving: a missing key, a wrong type or a broken
  * file all fall back instead of throwing, because a plugin should degrade rather
@@ -39,7 +39,7 @@ final class PluginSettingsImpl implements PluginSettings {
 
     /**
      * @param fromSiteConfig the {@code plugins.settings.{id}} block, may be null
-     * @param configFile     {@code plugins/config/{id}.yml}, may not exist
+     * @param configFile     {@code .config/plugins/{id}.yml}, may not exist
      */
     @SuppressWarnings("unchecked")
     static PluginSettingsImpl load(String pluginId, Map<String, Object> fromSiteConfig, Path configFile) {

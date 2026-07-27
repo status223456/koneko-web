@@ -2,7 +2,7 @@
 #
 # This file holds the texts of the site. It is re-read on every start, so a
 # restart is enough to change anything here - no rebuild needed.
-# The path is set with CONFIG_PATH in .env (default: config.yml).
+# Copy it to .config/config.yml, which is where the site reads it from.
 
 server:
   # The name of your osu! server. This is NOT the name of this project:
@@ -17,7 +17,8 @@ server:
     Write the description of your server here. Plain text, blank lines make
     paragraphs.
 
-    This text lives in config.yml, so changing it only needs a restart.
+    This text lives in .config/config.yml, so changing it only needs a
+    restart.
 
 links:
   # Discord invite. Leave empty to hide the button.
@@ -56,10 +57,11 @@ home:
 
 # Settings of the .jar plugins. Everything under a plugin id is handed to that
 # plugin as its settings, so a plugin can be configured without touching its
-# jar. A plugin may also read plugins/config/{id}.yml instead; the values here
-# win over that file.
+# jar. A plugin may also read .config/plugins/{id}.yml instead; that file wins
+# over the values here.
 plugins:
-  # false disables every plugin, exactly like PLUGINS_ENABLED=false.
+  # false starts the site with no plugin at all, which is the way back in
+  # after a bad jar.
   enabled: true
 
   # Plugin ids that must stay off, even though their jar is in place.

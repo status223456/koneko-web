@@ -63,7 +63,7 @@ public final class Auth {
         UserSession session = new UserSession(userId, username, privileges, tokens);
         String id = SessionStore.create(session);
 
-        ctx.res().addHeader("Set-Cookie", cookie(id, App.env.getSessionTimeoutMinutes() * 60));
+        ctx.res().addHeader("Set-Cookie", cookie(id, SessionStore.idleTimeoutSeconds()));
 
         logger.info("<{}>({}) logged in", username, userId);
 

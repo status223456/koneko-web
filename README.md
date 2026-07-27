@@ -24,10 +24,10 @@ database and no Redis of its own: every piece of data comes from
 
 ```
 cp .env.example .env
-cp config.example.yml config.yml
+cp .config/config.example.yml .config/config.yml
 ```
 
-Both `.env` and `config.yml` are gitignored: the repository only ever holds the
+Both `.env` and `.config/config.yml` are gitignored: the repository only ever holds the
 `.example` versions, filled with placeholders. Nothing in the repo contains a
 real domain, host or secret.
 
@@ -35,10 +35,16 @@ real domain, host or secret.
 
 Two files, on purpose:
 
-- **`.env`** - deployment settings (port, domain, API url, timeouts). Same
-  style as bancho.jar. Copy `.env.example` to `.env`.
-- **`config.yml`** - the texts of the site: server name, front page
-  description and the Discord link. Copy `config.example.yml` to `config.yml`.
+- **`.env`** - deployment settings only: port, domain, API url, level, API
+  client id and the FastLoad windows. Same style as bancho.jar. Copy
+  `.env.example` to `.env`.
+- **`.config/config.yml`** - the texts of the site: server name, front page
+  description, the Discord link and the plugin settings. Copy
+  `.config/config.example.yml` to `.config/config.yml`.
+
+Everything else - the API scopes, the API and session timeouts and the whole
+plugin host layout - is a fixed constant in the code, so there is nothing to
+set up for it.
 
 ## Running
 
@@ -47,7 +53,7 @@ On Windows, double click or run from a terminal:
 | Script | What it does |
 | --- | --- |
 | `build.bat` | `gradlew shadowJar` - produces `build\libs\koneko-web-shaded.jar` |
-| `run.bat` | creates `.env` and `config.yml` if missing, builds if needed, then starts the jar |
+| `run.bat` | creates `.env` and `.config/config.yml` if missing, builds if needed, then starts the jar |
 | `dev.bat` | `gradlew run`, for development against the sources |
 | `clean.bat` | `gradlew clean` |
 
@@ -58,7 +64,7 @@ By hand:
 
 ```
 cp .env.example .env
-cp config.example.yml config.yml
+cp .config/config.example.yml .config/config.yml
 ./gradlew shadowJar
 java -jar build/libs/koneko-web-shaded.jar
 ```
@@ -110,7 +116,7 @@ cannot walk away with an API token.
 ```
 src/main/java/com/osuserverlist/koneko/
   App.java              bootstrap: env, config, Javalin, KonekoVue
-  config/               .env and config.yml loading
+  config/               .env and .config/config.yml loading
   api/                  HTTP client for the bancho.jar API
   auth/                 server side sessions and token refresh
   routes/               page routes, /auth/*, /data/*

@@ -33,7 +33,7 @@ import com.osuserverlist.koneko.plugin.api.KonekoExtension;
  * <p>All of this happens <em>before</em> the HTTP server is created, because
  * Javalin 7 takes its routes at creation time - a plugin page has to exist by
  * then or it can never be mounted. The order at boot is therefore:
- * {@link #boot(Env, SiteConfig)}, then {@code Javalin.create(...)} with
+ * {@link #boot(SiteConfig)}, then {@code Javalin.create(...)} with
  * {@link PluginRoutes#register}, then {@link #afterStart()}.
  *
  * <p>Everything here is defensive on purpose. A jar that fails to load, an
@@ -55,6 +55,9 @@ public final class PluginService {
 
     private static volatile boolean enabled;
 
+    /** Where the .jar files live. Fixed, so no deployment setting is needed. */
+    private static final String PLUGINS_DIR = "plugins";
+
     private static volatile Path pluginsDir;
 
     private PluginService() {
@@ -67,18 +70,18 @@ public final class PluginService {
     /**
      * Loads and starts every plugin, then lets each of them register.
      *
-     * @param env  deployment settings, for the directory and the kill switch
-     * @param site site config, for the disabled list and the plugin settings
+     * @param site site config, for the kill switch, the disabled list and the
+     *             plugin settings
      */
-    public static synchronized void boot(Env env, SiteConfig site) {
-        enabled = env.isPluginsEnabled() && site.getPlugins().isEnabled();
+    public static synchronized void boot(SiteConfig site) {
+        enabled = site.getPlugins().isEnabled();
 
         if (!enabled) {
             logger.info("Plugins are turned off");
             return;
         }
 
-        pluginsDir = Path.of(env.getPluginsDir()).toAbsolutePath().normalize();
+        pluginsDir = Path.of(PLUGINS_DIR).toAbsolutePath().normalize();
 
         if (!Files.isDirectory(pluginsDir)) {
             logger.info("No plugins directory at <{}>; nothing to load", pluginsDir);
@@ -98,7 +101,7 @@ public final class PluginService {
             return;
         }
 
-        disableAll(jarManager, disabledIds(env, site));
+        disableAll(jarManager, disabledIds(site));
 
         try {
             jarManager.startPlugins();
@@ -229,15 +232,9 @@ public final class PluginService {
     // internals
     // ------------------------------------------------------------------
 
-    /** Ids listed as disabled in .env or in config.yml. */
-    private static Set<String> disabledIds(Env env, SiteConfig site) {
+    /** Ids listed as disabled in {@code .config/config.yml}. */
+    private static Set<String> disabledIds(SiteConfig site) {
         Set<String> disabled = new LinkedHashSet<>();
-
-        for (String id : env.getPluginsDisabled().split(",")) {
-            if (!id.isBlank()) {
-                disabled.add(id.trim());
-            }
-        }
 
         List<String> fromConfig = site.getPlugins().getDisabled();
 
@@ -314,12 +311,11 @@ public final class PluginService {
     }
 
     private static Path settingsFile(String pluginId) {
-        Path base = pluginsDir == null ? Path.of("plugins") : pluginsDir;
-        return base.resolve("config").resolve(pluginId + ".yml");
+        return Path.of(Env.CONFIG_DIR).resolve("plugins").resolve(pluginId + ".yml");
     }
 
     private static Path dataDirOf(String pluginId) {
-        Path base = pluginsDir == null ? Path.of("plugins") : pluginsDir;
+        Path base = pluginsDir == null ? Path.of(PLUGINS_DIR) : pluginsDir;
         return base.resolve("data").resolve(pluginId);
     }
 

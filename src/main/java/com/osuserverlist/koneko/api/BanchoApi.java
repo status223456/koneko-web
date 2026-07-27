@@ -43,7 +43,7 @@ public final class BanchoApi {
 
     public BanchoApi(Env env) {
         this.baseUrl = resolveBaseUrl(env);
-        this.timeout = Duration.ofSeconds(env.getApiTimeoutSeconds());
+        this.timeout = Duration.ofSeconds(Env.API_TIMEOUT_SECONDS);
         this.clientId = env.getApiClientId();
 
         this.client = HttpClient.newBuilder()

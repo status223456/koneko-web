@@ -7,12 +7,12 @@ build:
 
 run: build
 	@test -f .env || cp .env.example .env
-	@test -f config.yml || cp config.example.yml config.yml
+	@test -f .config/config.yml || cp .config/config.example.yml .config/config.yml
 	java -jar build/libs/koneko-web-shaded.jar
 
 dev:
 	@test -f .env || cp .env.example .env
-	@test -f config.yml || cp config.example.yml config.yml
+	@test -f .config/config.yml || cp .config/config.example.yml .config/config.yml
 	./gradlew run --console=plain
 
 clean:

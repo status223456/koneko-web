@@ -33,7 +33,7 @@ public final class App {
     /** Deployment settings, from {@code .env}. */
     public static Env env;
 
-    /** Site texts, from {@code config.yml}. */
+    /** Site texts, from {@code .config/config.yml}. */
     public static SiteConfig site;
 
     /** Client for the bancho.jar public API. */
@@ -44,10 +44,10 @@ public final class App {
 
     public static void main(String[] args) {
         env = Env.load();
-        site = SiteConfigLoader.load(env.getConfigPath());
+        site = SiteConfigLoader.load();
         api = new BanchoApi(env);
 
-        SessionStore.configure(env.getSessionTimeoutMinutes());
+        SessionStore.configure();
         FastCache.configure(env.getFastLoadTtlSeconds(), env.getFastLoadStaleSeconds());
         KonekoVue.configure(env.isDev());
 
@@ -67,7 +67,7 @@ public final class App {
         // The plugins are loaded before the server exists, because Javalin 7
         // takes its routes at creation time: a plugin page has to be known by
         // then or it can never be mounted.
-        PluginService.boot(env, site);
+        PluginService.boot(site);
 
         Runtime.getRuntime().addShutdownHook(new Thread(PluginService::shutdown, "koneko-plugins-stop"));
 

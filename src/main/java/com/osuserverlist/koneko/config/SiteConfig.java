@@ -59,7 +59,7 @@ public final class SiteConfig {
      * The .jar plugins loaded from the plugins directory.
      *
      * <p>Plugin specific settings live under {@code settings}, keyed by plugin
-     * id, and a plugin may also ship its own {@code plugins/config/{id}.yml},
+     * id, and a plugin may also ship its own {@code .config/plugins/{id}.yml},
      * which wins over this block.
      */
     @Getter

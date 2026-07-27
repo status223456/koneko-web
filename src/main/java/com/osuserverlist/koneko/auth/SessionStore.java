@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.osuserverlist.koneko.config.Env;
+
 /**
  * In memory store of logged in browsers.
  *
@@ -33,17 +35,20 @@ public final class SessionStore {
 
     private static final Map<String, UserSession> SESSIONS = new ConcurrentHashMap<>();
 
-    private static volatile Duration idleTimeout = Duration.ofMinutes(1440);
+    private static final Duration IDLE_TIMEOUT = Duration.ofMinutes(Env.SESSION_TIMEOUT_MINUTES);
 
     private static volatile ScheduledExecutorService sweeper;
 
     private SessionStore() {
     }
 
-    /** Called once at boot with the timeout from the environment. */
-    public static synchronized void configure(int idleTimeoutMinutes) {
-        idleTimeout = Duration.ofMinutes(Math.max(1, idleTimeoutMinutes));
+    /** How long a cookie stays valid, in seconds. */
+    public static int idleTimeoutSeconds() {
+        return (int) IDLE_TIMEOUT.toSeconds();
+    }
 
+    /** Called once at boot to start the sweeper. */
+    public static synchronized void configure() {
         if (sweeper != null) {
             return;
         }
@@ -98,7 +103,7 @@ public final class SessionStore {
     }
 
     private static boolean isExpired(UserSession session) {
-        return Instant.now().isAfter(session.getLastSeen().plus(idleTimeout))
+        return Instant.now().isAfter(session.getLastSeen().plus(IDLE_TIMEOUT))
                 || session.getTokens().isDead();
     }
 

@@ -13,6 +13,7 @@ import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.api.TokenPair;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.config.Env;
 import com.osuserverlist.koneko.plugin.PluginService;
 import com.osuserverlist.koneko.plugin.api.Events;
 import com.osuserverlist.koneko.plugin.api.PluginUser;
@@ -57,7 +58,7 @@ public final class AuthRoutes {
         }
 
         try {
-            TokenPair tokens = App.api.passwordGrant(username.trim(), password, App.env.getApiScopes());
+            TokenPair tokens = App.api.passwordGrant(username.trim(), password, Env.API_SCOPES);
             JsonNode info = App.api.userInfo(tokens.getAccessToken());
             JsonNode user = info.path("user");
 
