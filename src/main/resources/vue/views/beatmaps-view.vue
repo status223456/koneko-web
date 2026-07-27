@@ -122,6 +122,19 @@
 
                 return params.toString();
             },
+            // The same filters as the url, in the shape the API takes them.
+            // Empty values are dropped by the api helper.
+            params() {
+                return {
+                    q: this.query,
+                    status: this.status,
+                    mode: this.mode,
+                    server: this.server,
+                    sort: this.sort && this.sort !== "updated" ? this.sort : "",
+                    offset: this.offset,
+                    limit: this.limit
+                };
+            },
             apply(body) {
                 const page = (body && body.beatmapsets) || {};
 
@@ -149,8 +162,11 @@
                 this.loading = !cached;
 
                 try {
-                    const response = await fetch("/data/beatmaps" + (search ? "?" + search : ""));
-                    const body = await response.json();
+                    // The listing is asked of the API on this origin instead
+                    // of being proxied through /data/beatmaps.
+                    const body = {
+                        beatmapsets: await this.api("search_beatmapsets", this.params())
+                    };
 
                     this.apply(body);
                     this.fastSave("beatmaps:" + search, body);

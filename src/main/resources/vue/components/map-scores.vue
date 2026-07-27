@@ -267,17 +267,16 @@
                 this.loading = true;
 
                 try {
-                    const query = new URLSearchParams();
+                    // Straight to the API on this origin. This used to go
+                    // through /data/map-scores, which turned one board into a
+                    // request on the frontend and another on the backend.
+                    const envelope = (await this.api("get_map_scores", {
+                        id: beatmapId,
+                        mode: mode,
+                        offset: offset,
+                        limit: this.limit
+                    })) || {};
 
-                    if (mode) query.set("mode", String(mode));
-                    if (offset) query.set("offset", String(offset));
-
-                    const suffix = query.toString() ? "?" + query.toString() : "";
-                    const response = await fetch("/data/map-scores/"
-                        + encodeURIComponent(beatmapId) + suffix);
-
-                    const body = await response.json();
-                    const envelope = (body && body.scores) || {};
                     const page = envelope.results || [];
 
                     // The reader may have switched difficulty or board while

@@ -5,13 +5,13 @@
         <koneko-slot name="profile.top"></koneko-slot>
         <koneko-slot name="page.top"></koneko-slot>
 
-        <p class="muted" v-if="loading">Loading the profile...</p>
-
-        <section class="card" v-else-if="error">
+        <section class="card" v-if="error">
             <h2>Nothing here</h2>
             <p class="muted">{{ error }}</p>
         </section>
 
+        <!-- The shell is painted at once and every card below fills itself in
+             when its own answer lands, so nothing waits for the slowest one. -->
         <template v-else>
             <section class="mode-bar">
                 <div class="mode-variants">
@@ -32,7 +32,18 @@
             </section>
 
             <section class="card profile-card">
-                <div class="profile-top">
+                <div class="skeleton-profile" v-if="pending.header">
+                    <div class="skeleton skeleton-avatar"></div>
+
+                    <div class="skeleton-lines">
+                        <div class="skeleton skeleton-line skeleton-title"></div>
+                        <div class="skeleton skeleton-line skeleton-line-wide"></div>
+                        <div class="skeleton skeleton-line"></div>
+                        <div class="skeleton skeleton-line skeleton-line-short"></div>
+                    </div>
+                </div>
+
+                <div class="profile-top" v-else>
                     <img class="profile-avatar" :src="avatarUrl" :alt="info.name">
 
                     <div class="profile-identity">
@@ -88,54 +99,81 @@
                     </dl>
                 </div>
 
-                <div class="profile-followers">
+                <div class="profile-followers" v-if="!pending.header">
                     {{ fmtNumber(info.followers || 0) }} Followers
                 </div>
             </section>
 
             <section class="card">
                 <h2>Best scores</h2>
-                <p class="muted" v-if="!best.length">No scores yet.</p>
 
-                <score-row v-for="(score, i) in best" :key="score.id"
-                    :score="score" :index="i"></score-row>
+                <div class="skeleton-rows" v-if="pending.best">
+                    <div class="skeleton skeleton-row" v-for="n in 5" :key="n"></div>
+                </div>
 
-                <button class="load-more" v-if="canLoad('best')" :disabled="busy.best"
-                    @click="loadMore('best')">Load more</button>
+                <template v-else>
+                    <p class="muted" v-if="!best.length">No scores yet.</p>
+
+                    <score-row v-for="(score, i) in best" :key="score.id"
+                        :score="score" :index="i"></score-row>
+
+                    <button class="load-more" v-if="canLoad('best')" :disabled="busy.best"
+                        @click="loadMore('best')">Load more</button>
+                </template>
             </section>
 
             <section class="card">
                 <h2>Last scores</h2>
-                <p class="muted" v-if="!recent.length">No scores yet.</p>
 
-                <score-row v-for="score in recent" :key="score.id" :score="score"></score-row>
+                <div class="skeleton-rows" v-if="pending.recent">
+                    <div class="skeleton skeleton-row" v-for="n in 5" :key="n"></div>
+                </div>
 
-                <button class="load-more" v-if="canLoad('recent')" :disabled="busy.recent"
-                    @click="loadMore('recent')">Load more</button>
+                <template v-else>
+                    <p class="muted" v-if="!recent.length">No scores yet.</p>
+
+                    <score-row v-for="score in recent" :key="score.id" :score="score"></score-row>
+
+                    <button class="load-more" v-if="canLoad('recent')" :disabled="busy.recent"
+                        @click="loadMore('recent')">Load more</button>
+                </template>
             </section>
 
             <section class="card">
                 <h2>First places <span class="muted" v-if="counts.first">({{ fmtNumber(counts.first) }})</span></h2>
-                <p class="muted" v-if="!firstPlaces.length">No number one scores yet.</p>
 
-                <score-row v-for="score in firstPlaces" :key="score.id" :score="score"></score-row>
+                <div class="skeleton-rows" v-if="pending.first">
+                    <div class="skeleton skeleton-row" v-for="n in 3" :key="n"></div>
+                </div>
 
-                <button class="load-more" v-if="canLoad('first')" :disabled="busy.first"
-                    @click="loadMore('first')">Load more</button>
+                <template v-else>
+                    <p class="muted" v-if="!firstPlaces.length">No number one scores yet.</p>
+
+                    <score-row v-for="score in firstPlaces" :key="score.id" :score="score"></score-row>
+
+                    <button class="load-more" v-if="canLoad('first')" :disabled="busy.first"
+                        @click="loadMore('first')">Load more</button>
+                </template>
             </section>
 
             <section class="card">
                 <h2>Playcount graph</h2>
-                <playcount-graph :months="playcounts"></playcount-graph>
+
+                <div class="skeleton skeleton-graph" v-if="pending.playcounts"></div>
+                <playcount-graph v-else :months="playcounts"></playcount-graph>
             </section>
 
-            <section class="card" v-if="achievements.length">
+            <section class="card" v-if="pending.medals || achievements.length">
                 <h2>
                     Medals
-                    <span class="muted">({{ medals.length }} / {{ medalTotal }})</span>
+                    <span class="muted" v-if="!pending.medals">({{ medals.length }} / {{ medalTotal }})</span>
                 </h2>
 
-                <p class="muted" v-if="!medals.length">No medals yet.</p>
+                <div class="skeleton-medals" v-if="pending.medals">
+                    <div class="skeleton skeleton-medal" v-for="n in 12" :key="n"></div>
+                </div>
+
+                <p class="muted" v-else-if="!medals.length">No medals yet.</p>
 
                 <div class="medals" v-else>
                     <div class="medal" v-for="medal in medals" :key="medal.id">
@@ -152,7 +190,12 @@
 
             <section class="card">
                 <h2>Submitted beatmaps</h2>
-                <p class="muted" v-if="!beatmapsets.length">
+
+                <div class="skeleton-rows" v-if="pending.beatmapsets">
+                    <div class="skeleton skeleton-row" v-for="n in 2" :key="n"></div>
+                </div>
+
+                <p class="muted" v-else-if="!beatmapsets.length">
                     This player has not submitted any beatmaps yet.
                 </p>
 
@@ -184,10 +227,31 @@
     app.component("profile-view", {
         template: "#profile-view",
         data: () => ({
-            loading: true,
             error: "",
             identifier: "",
             player: null,
+            // One flag per card. Every section fetches itself, shows its own
+            // loader and clears its own flag, so the page is usable as soon as
+            // the first answer is in instead of when the last one is.
+            pending: {
+                header: true,
+                best: true,
+                recent: true,
+                first: true,
+                playcounts: true,
+                medals: true,
+                beatmapsets: true
+            },
+            // Raised on every mode switch: answers of the previous run are
+            // dropped instead of painted over the new mode.
+            generation: 0,
+            // The sections as they arrive, kept so the FastLoad copy of the
+            // page can be written while the rest is still on its way.
+            snapshot: {},
+            // How much of a list the first page holds, and how far the
+            // playcount graph looks back.
+            pageSize: 10,
+            playcountMonths: 12,
             // 0-3 is the plain mode, the variant shifts it the way the
             // server numbers them: +4 for relax, 8 for autopilot.
             base: 0,
@@ -287,19 +351,22 @@
                 this.busy[kind] = true;
 
                 try {
-                    const query = new URLSearchParams({
-                        scope: kind,
-                        mode: String(this.mode),
-                        offset: String(this.listOf(kind).length)
+                    // First places have their own route, the other two are
+                    // scopes of the score route.
+                    const endpoint = kind === "first"
+                        ? "get_player_first_places"
+                        : "get_player_scores";
+
+                    const params = Object.assign({}, this.apiWho(this.identifier), {
+                        mode: this.mode,
+                        limit: this.pageSize,
+                        offset: this.listOf(kind).length
                     });
 
-                    const response = await fetch("/data/scores/"
-                        + encodeURIComponent(this.identifier) + "?" + query.toString());
+                    if (kind !== "first") params.scope = kind;
 
-                    if (!response.ok) return;
-
-                    const body = await response.json();
-                    const page = (body.scores && body.scores.results) || [];
+                    const answer = await this.apiQuietly(endpoint, params);
+                    const page = (answer && answer.results) || [];
 
                     this.listOf(kind).push(...page);
                 } catch (e) {
@@ -308,8 +375,10 @@
                     this.busy[kind] = false;
                 }
             },
+            // The whole page of the last visit at once: a revisit paints filled
+            // cards immediately and the fresh answers replace them silently.
             apply(body) {
-                this.player = body.player;
+                this.player = body.player || null;
 
                 this.best = (body.best && body.best.results) || [];
                 this.recent = (body.recent && body.recent.results) || [];
@@ -327,44 +396,165 @@
                     first: (body.firstPlaces && body.firstPlaces.count) || this.firstPlaces.length
                 };
 
+                this.settled();
                 this.setTitle(this.info.name);
             },
-            async load() {
-                const key = "profile:" + this.identifier.toLowerCase() + ":" + this.mode;
-                const cached = this.fastLoad(key);
+            /** Nothing is being waited for any more: drop every loader. */
+            settled() {
+                Object.keys(this.pending).forEach(name => {
+                    this.pending[name] = false;
+                });
+            },
+            cacheKey() {
+                return "profile:" + this.identifier.toLowerCase() + ":" + this.mode;
+            },
+            /**
+             * Takes the loader off one card and keeps the FastLoad copy of the
+             * page in step: the sections land one by one, so the stored page
+             * grows with them instead of being written once at the end.
+             */
+            settle(name, part, value) {
+                this.pending[name] = false;
 
-                if (cached) {
-                    this.apply(cached);
-                    this.loading = false;
+                if (part) {
+                    this.snapshot[part] = value;
+                    this.fastSave(this.cacheKey(), this.snapshot);
                 }
-
+            },
+            notFound() {
+                this.error = "This player does not exist.";
+                this.setTitle("Not found");
+                this.settled();
+            },
+            /**
+             * The player card, and the only section that decides whether the
+             * profile exists at all. It is also the only one that is not per
+             * mode: the details carry the stats of every mode at once, so a
+             * mode switch does not refetch it.
+             */
+            async loadHeader(run, who) {
                 try {
-                    const response = await fetch("/data/profile/"
-                        + encodeURIComponent(this.identifier) + "?mode=" + this.mode);
+                    const details = await this.api("get_player_details",
+                        Object.assign({}, who, { scope: "all" }));
 
-                    const body = await response.json();
+                    if (run !== this.generation) return;
 
-                    if (!response.ok) {
-                        if (!cached) {
-                            this.error = body.status || "This player does not exist.";
-                            this.setTitle("Not found");
-                        }
+                    const player = (details && details.player) || null;
 
+                    if (!player) {
+                        this.notFound();
                         return;
                     }
 
-                    this.apply(body);
-                    this.fastSave(key, body);
+                    this.player = player;
+                    this.setTitle(this.info.name);
+                    this.settle("header", "player", player);
                 } catch (e) {
-                    if (!cached) {
+                    if (run !== this.generation) return;
+
+                    this.pending.header = false;
+
+                    if (e && e.status === 404) {
+                        this.notFound();
+                        return;
+                    }
+
+                    // A cached player stays on screen; without one there is
+                    // nothing to show but the failure.
+                    if (!this.player) {
                         this.error = "The server could not be reached.";
                     }
-                } finally {
-                    this.loading = false;
                 }
             },
+            /**
+             * Fetches one card on its own: it carries its own loader, fills
+             * itself in when its answer lands, and a failure leaves the rest of
+             * the page untouched.
+             */
+            async loadSection(run, name, part, endpoint, params, apply) {
+                const answer = await this.apiQuietly(endpoint, params);
+
+                // A mode switch while this was in flight makes the answer
+                // stale, so it is dropped rather than painted.
+                if (run !== this.generation) return;
+
+                apply(answer);
+                this.settle(name, part, answer);
+            },
+            load() {
+                // Everything an earlier run may still deliver is stale now.
+                const run = ++this.generation;
+
+                const who = this.apiWho(this.identifier);
+                const paging = { mode: this.mode, limit: this.pageSize };
+                const cached = this.fastLoad(this.cacheKey());
+
+                this.snapshot = cached ? Object.assign({}, cached) : {};
+
+                if (cached) {
+                    this.apply(cached);
+                } else {
+                    // The player card survives a mode switch: the numbers it
+                    // shows come from details that are already here.
+                    this.pending.header = !this.player;
+                    this.pending.best = true;
+                    this.pending.recent = true;
+                    this.pending.first = true;
+                    this.pending.playcounts = true;
+                    this.pending.medals = true;
+                    this.pending.beatmapsets = true;
+                }
+
+                if (this.player) {
+                    this.snapshot.player = this.player;
+                } else {
+                    this.loadHeader(run, who);
+                }
+
+                // The requests all leave at once and are not awaited here:
+                // whichever card is ready first is on screen first.
+                this.loadSection(run, "best", "best", "get_player_scores",
+                    Object.assign({}, who, paging, { scope: "best" }),
+                    answer => {
+                        this.best = (answer && answer.results) || [];
+                        this.counts.best = (answer && answer.count) || this.best.length;
+                    });
+
+                this.loadSection(run, "recent", "recent", "get_player_scores",
+                    Object.assign({}, who, paging, { scope: "recent" }),
+                    answer => {
+                        this.recent = (answer && answer.results) || [];
+                        this.counts.recent = (answer && answer.count) || this.recent.length;
+                    });
+
+                this.loadSection(run, "first", "firstPlaces", "get_player_first_places",
+                    Object.assign({}, who, paging),
+                    answer => {
+                        this.firstPlaces = (answer && answer.results) || [];
+                        this.counts.first = (answer && answer.count) || this.firstPlaces.length;
+                    });
+
+                this.loadSection(run, "playcounts", "playcounts", "get_player_playcounts",
+                    Object.assign({}, who, { mode: this.mode, months: this.playcountMonths }),
+                    answer => {
+                        this.playcounts = (answer && answer.months) || [];
+                    });
+
+                // Medals belong to the player, not to a mode.
+                this.loadSection(run, "medals", "achievements", "get_player_achievements", who,
+                    answer => {
+                        this.achievements = (answer && answer.results) || [];
+                        this.medalTotal = (answer && answer.total) || this.achievements.length;
+                    });
+
+                this.loadSection(run, "beatmapsets", "beatmapsets", "get_player_beatmapsets",
+                    Object.assign({}, who, { limit: this.pageSize }),
+                    answer => {
+                        this.beatmapsets = (answer && answer.results) || [];
+                    });
+            },
             reload() {
-                this.loading = !this.player;
+                this.error = "";
                 this.load();
             }
         },

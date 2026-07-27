@@ -89,6 +89,65 @@
                     // A full or blocked storage is not worth a broken page.
                 }
             },
+            // The bancho.jar API is reachable under /api/v1 on this very
+            // origin, so public page data is fetched from it directly instead
+            // of going browser -> koneko-web -> API. One hop, no CORS, and no
+            // token involved: none of these endpoints need one.
+            apiBase() {
+                return String(koneko.apiBase || "/api/v1").replace(/\/+$/, "");
+            },
+            /**
+             * GETs one API endpoint and returns the parsed body.
+             *
+             * Empty, null and undefined parameters are dropped, so callers can
+             * hand over their whole state without filtering it first.
+             */
+            async api(endpoint, params) {
+                const query = new URLSearchParams();
+
+                Object.keys(params || {}).forEach(name => {
+                    const value = params[name];
+
+                    if (value === null || value === undefined || value === "") return;
+
+                    query.set(name, String(value));
+                });
+
+                const suffix = query.toString() ? "?" + query.toString() : "";
+
+                const response = await fetch(this.apiBase() + "/" + endpoint + suffix, {
+                    headers: { "Accept": "application/json" },
+                    // The API is a different service behind the same host and
+                    // has no use for the frontend session cookie.
+                    credentials: "omit"
+                });
+
+                if (!response.ok) {
+                    const error = new Error(endpoint + " answered " + response.status);
+                    error.status = response.status;
+                    throw error;
+                }
+
+                return await response.json();
+            },
+            // The same call, but a failure gives null instead of throwing: a
+            // secondary section of a page should grey out on its own rather
+            // than take the whole page down.
+            async apiQuietly(endpoint, params) {
+                try {
+                    return await this.api(endpoint, params);
+                } catch (e) {
+                    return null;
+                }
+            },
+            // The player of a profile url: a numeric segment is an id,
+            // anything else a name, the way the API expects it.
+            apiWho(identifier) {
+                const value = String(identifier === null || identifier === undefined
+                    ? "" : identifier);
+
+                return /^[0-9]+$/.test(value) ? { id: value } : { name: value };
+            },
             fmtNumber(value) {
                 return (value === null || value === undefined) ? "-" : Number(value).toLocaleString();
             },

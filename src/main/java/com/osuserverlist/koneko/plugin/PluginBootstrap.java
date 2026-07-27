@@ -8,7 +8,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.osuserverlist.koneko.plugin.api.Events;
 import com.osuserverlist.koneko.plugin.api.PluginUser;
 
 import io.javalin.http.Context;
@@ -56,25 +55,6 @@ public final class PluginBootstrap {
         plugins.put("data", data(ctx, contributions));
 
         return plugins;
-    }
-
-    /**
-     * Lets plugins add to a core {@code /data/*} answer.
-     *
-     * <p>The body is copied first: the original may be a cached object shared
-     * with every other visitor, and a plugin writing into that would poison the
-     * cache.
-     */
-    public static Map<String, Object> enrich(Context ctx, String key, Map<String, Object> body) {
-        if (!PluginService.enabled() || body == null) {
-            return body;
-        }
-
-        Map<String, Object> copy = new LinkedHashMap<>(body);
-
-        PluginService.events().publish(new Events.Data(ctx, key, copy));
-
-        return copy;
     }
 
     private static List<Map<String, Object>> nav(Context ctx, Contributions contributions) {

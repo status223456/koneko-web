@@ -251,8 +251,11 @@
             }
 
             try {
-                const response = await fetch("/data/beatmapset/" + encodeURIComponent(setId));
-                const body = await response.json();
+                // The set comes from the API on this origin, not through
+                // /data/beatmapset.
+                const body = {
+                    beatmapset: await this.api("get_beatmapset", { id: setId })
+                };
 
                 if (this.apply(body)) {
                     this.fastSave(key, body);

@@ -236,13 +236,25 @@
                 }
 
                 try {
-                    const response = await fetch("/data/leaderboard?" + query.toString());
-                    const body = await response.json();
+                    // Rows and the country filter both come from the API on
+                    // this origin, asked for at the same time. This used to be
+                    // one /data/leaderboard call that fanned out on the
+                    // backend.
+                    const [leaderboard, countries] = await Promise.all([
+                        this.api("get_leaderboard", {
+                            mode: this.mode,
+                            sort: this.sort,
+                            country: this.country,
+                            offset: this.offset,
+                            limit: this.limit
+                        }),
+                        this.apiQuietly("get_countries", { mode: this.mode })
+                    ]);
 
-                    if (response.ok) {
-                        this.apply(body);
-                        this.fastSave(key, body);
-                    }
+                    const body = { leaderboard: leaderboard, countries: countries };
+
+                    this.apply(body);
+                    this.fastSave(key, body);
                 } catch (e) {
                     // The cached page stays up when the API is unreachable.
                 } finally {

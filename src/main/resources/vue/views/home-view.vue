@@ -163,10 +163,28 @@
             }
         },
         methods: {
-            // DataRoutes already normalises the counter names, so a missing
-            // section is the only case left to handle.
             stat(name) {
                 return this.stats ? this.stats[name] : null;
+            },
+            // The API has spelled its counters more than one way, so the names
+            // the strip uses are resolved here. DataRoutes used to do this.
+            counters(stats) {
+                if (!stats) return null;
+
+                const pick = (...names) => {
+                    for (const name of names) {
+                        if (typeof stats[name] === "number") return stats[name];
+                    }
+
+                    return null;
+                };
+
+                return {
+                    online: pick("onlinePlayers", "online_players", "online"),
+                    players: pick("totalPlayers", "total_players", "players"),
+                    beatmaps: pick("maps", "beatmaps", "totalMaps"),
+                    scores: pick("scores", "totalScores")
+                };
             },
             apply(body) {
                 this.stats = body.stats || null;
@@ -185,8 +203,13 @@
             }
 
             try {
-                const response = await fetch("/data/home");
-                const body = await response.json();
+                // The counters come from the API on this origin, so the front
+                // page is no longer proxied through /data/home.
+                const body = {
+                    stats: this.home.showStats
+                        ? this.counters(await this.api("get_server_stats"))
+                        : null
+                };
 
                 this.apply(body);
                 this.fastSave("home", body);
