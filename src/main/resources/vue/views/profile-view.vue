@@ -14,6 +14,13 @@
              when its own answer lands, so nothing waits for the slowest one. -->
         <template v-else>
             <section class="mode-bar">
+                <div class="mode-tabs">
+                    <button class="mode-tab" v-for="tab in modes" :key="tab.id"
+                        :class="{ active: base === tab.id }" @click="pickBase(tab.id)">
+                        {{ tab.label }}
+                    </button>
+                </div>
+
                 <div class="mode-variants">
                     <button class="mode-variant" :class="{ active: !variant }"
                         @click="pickVariant('')">Vanilla</button>
@@ -21,13 +28,6 @@
                         :disabled="!relaxAllowed" @click="pickVariant('relax')">Relax</button>
                     <button class="mode-variant" :class="{ active: variant === 'autopilot' }"
                         :disabled="!autopilotAllowed" @click="pickVariant('autopilot')">Autopilot</button>
-                </div>
-
-                <div class="mode-tabs">
-                    <button class="mode-tab" v-for="tab in modes" :key="tab.id"
-                        :class="{ active: base === tab.id }" @click="pickBase(tab.id)">
-                        {{ tab.label }}
-                    </button>
                 </div>
             </section>
 
@@ -64,6 +64,11 @@
                                 </span>
                                 <span class="profile-rank-value">{{ fmtRank(stats.country_rank) }}</span>
                             </div>
+
+                            <div class="profile-rank profile-rank-followers" v-if="!pending.header">
+                                <span class="profile-rank-label">Followers</span>
+                                <span class="profile-rank-value">{{ fmtNumber(info.followers || 0) }}</span>
+                            </div>
                         </div>
 
                         <div class="grade-counts">
@@ -97,10 +102,6 @@
                             <dd>{{ fmtPlaytime(stats.playtime) }}</dd>
                         </div>
                     </dl>
-                </div>
-
-                <div class="profile-followers" v-if="!pending.header">
-                    {{ fmtNumber(info.followers || 0) }} Followers
                 </div>
             </section>
 

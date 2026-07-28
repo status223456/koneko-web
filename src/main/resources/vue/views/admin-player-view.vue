@@ -150,6 +150,15 @@
                 </ul>
             </section>
         </template>
+
+        <admin-action-dialog :open="!!dialog"
+            :title="dialog ? dialog.title : ''"
+            :text="dialog ? dialog.text || '' : ''"
+            :fields="dialog ? dialog.fields : []"
+            :confirm-label="dialog ? dialog.confirm : 'Confirm'"
+            :danger="dialog ? !!dialog.danger : false"
+            :busy="dialogBusy" :error="dialogError"
+            @close="closeDialog" @submit="runAction"></admin-action-dialog>
     </div>
 </template>
 
@@ -182,7 +191,10 @@
             email: "",
             logs: [],
             logCount: 0,
-            stats: []
+            stats: [],
+            dialog: null,
+            dialogBusy: false,
+            dialogError: ""
         }),
         computed: {
             avatar() {
@@ -216,72 +228,219 @@
                     this.loading = false;
                 }
             },
-            async act(action) {
-                let body = { user_id: this.userId };
+            act(action) {
+                this.dialogError = "";
+                this.dialog = Object.assign({ action: action }, this.spec(action));
+            },
+            modeOptions() {
+                const options = [{ value: -1, label: "Every mode" }];
 
-                if (action === "restrict" || action === "unrestrict"
-                    || action === "silence" || action === "unsilence") {
-
-                    if (action === "silence") {
-                        const duration = window.prompt("How long? For example 30m, 2h, 1d.", "1h");
-                        if (duration === null) return;
-                        body.duration = duration;
-                    }
-
-                    const reason = window.prompt("Reason:");
-                    if (reason === null) return;
-                    body.reason = reason;
-
-                } else if (action === "note") {
-                    const message = window.prompt("Note. Only staff will see this.");
-                    if (message === null || !message.trim()) return;
-                    body.message = message;
-
-                } else if (action === "donator") {
-                    const duration = window.prompt("Supporter for how long? For example 30d.", "30d");
-                    if (duration === null) return;
-                    body.duration = duration;
-
-                } else if (action === "country") {
-                    const country = window.prompt("Two letter country code, for example RU.");
-                    if (country === null || !country.trim()) return;
-                    body.country = country.trim();
-
-                } else if (action === "name") {
-                    const name = window.prompt("New username:", this.player.name);
-                    if (name === null || !name.trim()) return;
-                    body.name = name.trim();
-
-                } else if (action === "privileges-add" || action === "privileges-remove") {
-                    const privileges = window.prompt(
-                        "Privilege names, comma separated. For example SUPPORTER, NOMINATOR.");
-
-                    if (privileges === null || !privileges.trim()) return;
-
-                    body.privileges = privileges.split(",")
-                        .map(part => part.trim().toUpperCase())
-                        .filter(part => part.length > 0);
-
-                } else if (action === "wipe") {
-                    if (!window.confirm("Wipe every score and statistic of " + this.player.name
-                        + "?\n\nThis cannot be undone.")) return;
-
-                    const mode = window.prompt("Which mode? 0 to 8, or -1 for all of them.", "-1");
-                    if (mode === null) return;
-
-                    body.mode = Number(mode);
+                for (let mode = 0; mode <= 8; mode += 1) {
+                    options.push({ value: mode, label: this.modeName(mode) });
                 }
 
+                return options;
+            },
+            privilegeOptions() {
+                return [
+                    "UNRESTRICTED", "VERIFIED", "WHITELISTED", "SUPPORTER", "PREMIUM",
+                    "ALUMNI", "TOURNEY_MANAGER", "NOMINATOR", "MODERATOR",
+                    "ADMINISTRATOR", "DEVELOPER"
+                ].map(name => ({ value: name, label: name.replace(/_/g, " ") }));
+            },
+            heldPrivilegeOptions() {
+                const held = (this.player.roles || [])
+                    .map(role => String(role).trim().toUpperCase())
+                    .filter(role => role.length > 0);
+
+                if (!held.length) return this.privilegeOptions();
+
+                return held.map(name => ({ value: name, label: name.replace(/_/g, " ") }));
+            },
+            spec(action) {
+                const who = this.player.name || "this account";
+                const reason = required => ({
+                    key: "reason",
+                    label: "Reason",
+                    required: required,
+                    hint: "Kept in this account's staff history."
+                });
+
+                if (action === "restrict") {
+                    return {
+                        title: "Restrict " + who,
+                        confirm: "Restrict",
+                        danger: true,
+                        fields: [reason(true)]
+                    };
+                }
+
+                if (action === "unrestrict") {
+                    return {
+                        title: "Unrestrict " + who,
+                        confirm: "Unrestrict",
+                        fields: [reason(false)]
+                    };
+                }
+
+                if (action === "silence") {
+                    return {
+                        title: "Silence " + who,
+                        confirm: "Silence",
+                        fields: [
+                            {
+                                key: "duration",
+                                label: "Duration",
+                                value: "1h",
+                                required: true,
+                                hint: "For example 30m, 2h or 1d."
+                            },
+                            reason(true)
+                        ]
+                    };
+                }
+
+                if (action === "unsilence") {
+                    return {
+                        title: "Unsilence " + who,
+                        confirm: "Unsilence",
+                        fields: [reason(false)]
+                    };
+                }
+
+                if (action === "note") {
+                    return {
+                        title: "Add a note to " + who,
+                        text: "Only staff will see this.",
+                        confirm: "Add note",
+                        fields: [{
+                            key: "message",
+                            label: "Note",
+                            type: "textarea",
+                            required: true
+                        }]
+                    };
+                }
+
+                if (action === "donator") {
+                    return {
+                        title: "Give supporter to " + who,
+                        confirm: "Give supporter",
+                        fields: [{
+                            key: "duration",
+                            label: "Duration",
+                            value: "30d",
+                            required: true,
+                            hint: "For example 30d. Use 0 to take it away."
+                        }]
+                    };
+                }
+
+                if (action === "country") {
+                    return {
+                        title: "Change the country of " + who,
+                        confirm: "Change country",
+                        fields: [{
+                            key: "country",
+                            label: "Country code",
+                            value: String(this.player.country || "").toUpperCase(),
+                            required: true,
+                            maxlength: 2,
+                            hint: "Two letters, for example DE."
+                        }]
+                    };
+                }
+
+                if (action === "name") {
+                    return {
+                        title: "Rename " + who,
+                        confirm: "Rename",
+                        fields: [{
+                            key: "name",
+                            label: "New username",
+                            value: this.player.name || "",
+                            required: true
+                        }]
+                    };
+                }
+
+                if (action === "privileges-add") {
+                    return {
+                        title: "Give privileges to " + who,
+                        confirm: "Add privileges",
+                        fields: [{
+                            key: "privs",
+                            label: "Privileges",
+                            type: "checks",
+                            required: true,
+                            options: this.privilegeOptions(),
+                            hint: "Tick every privilege to add."
+                        }]
+                    };
+                }
+
+                if (action === "privileges-remove") {
+                    return {
+                        title: "Take privileges from " + who,
+                        confirm: "Remove privileges",
+                        danger: true,
+                        fields: [{
+                            key: "privs",
+                            label: "Privileges",
+                            type: "checks",
+                            required: true,
+                            options: this.heldPrivilegeOptions(),
+                            hint: "Tick every privilege to take away."
+                        }]
+                    };
+                }
+
+                if (action === "wipe") {
+                    return {
+                        title: "Wipe " + who,
+                        text: "Every score and statistic in the chosen mode is removed."
+                            + " This cannot be undone.",
+                        confirm: "Wipe",
+                        danger: true,
+                        fields: [{
+                            key: "mode",
+                            label: "Mode",
+                            type: "select",
+                            options: this.modeOptions()
+                        }]
+                    };
+                }
+
+                return { title: "Confirm", confirm: "Confirm", fields: [] };
+            },
+            async runAction(values) {
+                if (!this.dialog) return;
+
+                const body = Object.assign({ user_id: this.userId }, values);
+
+                if (body.mode !== undefined) body.mode = Number(body.mode);
+
+                this.dialogBusy = true;
+                this.dialogError = "";
+
                 try {
-                    await this.session("POST", "/admin/api/" + action, body);
+                    await this.session("POST", "/admin/api/" + this.dialog.action, body);
+
+                    this.dialog = null;
 
                     // The history has just gained a line, so the page is reloaded
                     // rather than patched: the new line is the point.
                     this.loading = true;
                     await this.load();
                 } catch (e) {
-                    window.alert(e.message || "That could not be done.");
+                    this.dialogError = e.message || "That could not be done.";
+                } finally {
+                    this.dialogBusy = false;
                 }
+            },
+            closeDialog() {
+                this.dialog = null;
+                this.dialogError = "";
             }
         },
         created() {
