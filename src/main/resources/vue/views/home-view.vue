@@ -6,7 +6,7 @@
         <koneko-slot name="page.top"></koneko-slot>
 
         <div class="announcement" v-if="home.announcement">
-            <span class="announcement-icon">i</span>
+            <span class="announcement-icon" aria-hidden="true">i</span>
             <span>{{ home.announcement }}</span>
             <a v-if="home.announcementLink" :href="home.announcementLink"
                target="_blank" rel="noopener">here!</a>
@@ -19,14 +19,15 @@
                     <span v-else>{{ initials }}</span>
                 </div>
 
-                <h1 class="hero-title">Welcome to {{ site.name }}</h1>
+                <h1 class="hero-title">Play osu! on {{ site.name }}</h1>
                 <p class="hero-tagline" v-if="site.tagline">{{ site.tagline }}</p>
+                <p class="hero-tagline" v-else>Your own ranking, your own beatmaps, your own scores.</p>
 
                 <div class="hero-actions">
-                    <a class="button" v-if="!user" href="/login">Get started</a>
+                    <a class="button" v-if="!user" href="/login">Log in and play</a>
                     <a class="button" v-else :href="'/u/' + user.id">My profile</a>
 
-                    <a class="button button-ghost" v-if="home.showConnectGuide" href="#connect">How to connect</a>
+                    <a class="button button-ghost" v-if="home.showConnectGuide" href="#connect">Set up the game</a>
                     <a class="button button-ghost" v-else-if="links.discord"
                        :href="links.discord" target="_blank" rel="noopener">Join the Discord</a>
                 </div>
@@ -54,7 +55,7 @@
 
         <section class="tiles">
             <a class="tile" :href="home.showConnectGuide ? '#connect' : '/login'">
-                <span class="tile-icon">
+                <span class="tile-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <path d="M8 5l11 7-11 7z" stroke-linejoin="round"></path>
                     </svg>
@@ -64,7 +65,7 @@
             </a>
 
             <a class="tile" href="/leaderboard">
-                <span class="tile-icon">
+                <span class="tile-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <path d="M8 4h8v5a4 4 0 01-8 0z" stroke-linejoin="round"></path>
                         <path d="M16 5h3v2a3 3 0 01-3 3M8 5H5v2a3 3 0 003 3"></path>
@@ -76,7 +77,7 @@
             </a>
 
             <a class="tile" href="/beatmaps">
-                <span class="tile-icon">
+                <span class="tile-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <circle cx="12" cy="12" r="8"></circle>
                         <circle cx="12" cy="12" r="2.5"></circle>
@@ -87,7 +88,7 @@
             </a>
 
             <a class="tile" v-if="links.discord" :href="links.discord" target="_blank" rel="noopener">
-                <span class="tile-icon">
+                <span class="tile-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <circle cx="9" cy="9" r="3"></circle>
                         <path d="M3.5 19a5.5 5.5 0 0111 0" stroke-linecap="round"></path>

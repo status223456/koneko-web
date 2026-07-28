@@ -53,11 +53,12 @@
             </p>
         </section>
 
-        <p class="muted" v-if="loading">Searching...</p>
+        <p class="muted" v-if="loading">Searching the beatmaps...</p>
 
         <section class="card" v-else-if="!sets.length">
-            <h2>Nothing found</h2>
-            <p class="muted">No beatmap matches this search yet.</p>
+            <h2>No maps match that search</h2>
+            <p class="muted">Try another title, artist or mapper, or clear the filters to see
+                every set on the server.</p>
         </section>
 
         <template v-else>

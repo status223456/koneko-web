@@ -12,7 +12,7 @@
                 <label class="field field-wide">
                     <span class="field-label">Name</span>
                     <input class="filter-input" type="search" v-model="search"
-                        placeholder="Part of a name" @keyup.enter="reset">
+                        placeholder="e.g. Marc" @keyup.enter="reset">
                 </label>
 
                 <button class="button" @click="reset">Search</button>
@@ -30,7 +30,8 @@
 
             <template v-else>
                 <p class="muted" v-if="error">{{ error }}</p>
-                <p class="muted" v-else-if="!players.length">No player matches that name.</p>
+                <p class="muted" v-else-if="!players.length">No player matches that name. Check the
+                    spelling, or search for just part of it.</p>
 
                 <div class="player-grid" v-else>
                     <a class="player-chip" v-for="player in players" :key="player.id"

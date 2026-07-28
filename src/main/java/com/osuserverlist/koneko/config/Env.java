@@ -26,11 +26,17 @@ public final class Env {
     public static final String CONFIG_PATH = CONFIG_DIR + "/config.yml";
 
     /**
-     * Scopes asked for at login. identify = read own profile, profile = edit
-     * it, which is what the settings page needs. Overridable through
-     * {@code API_SCOPES} in {@code .env}.
+     * Scopes asked for at login. identify = read own profile, profile = edit it, which is what
+     * the settings page needs; moderation, beatmaps and admin are what the staff panel needs.
+     *
+     * <p>They are requested for everyone because a scope is only permission to ask: the API
+     * still refuses the call unless the account holds the matching privilege, so a player
+     * carrying an admin scope can do exactly nothing with it. Asking only for staff would mean
+     * knowing who is staff before they have logged in.
+     *
+     * <p>Overridable through {@code API_SCOPES} in {@code .env}.
      */
-    public static final String DEFAULT_API_SCOPES = "identify profile";
+    public static final String DEFAULT_API_SCOPES = "identify profile moderation beatmaps admin";
 
     /** Timeout of a single call to the bancho.jar API. */
     public static final int API_TIMEOUT_SECONDS = 10;

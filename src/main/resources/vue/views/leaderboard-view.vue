@@ -61,7 +61,8 @@
             </div>
 
             <p class="muted" v-if="loading">Loading the ranking...</p>
-            <p class="muted" v-else-if="!rows.length">Nobody has played this mode yet.</p>
+            <p class="muted" v-else-if="!rows.length">Nobody has set a score in this mode yet.
+                Be the first.</p>
 
             <table class="table" v-else>
                 <thead>

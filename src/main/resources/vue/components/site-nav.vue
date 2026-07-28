@@ -33,14 +33,40 @@
             </form>
 
             <div class="nav-actions">
-                <template v-if="user">
-                    <a class="nav-user" :href="'/u/' + user.id">
+                <!-- Everything that belongs to the person rather than to the site
+                     sits behind one control: the profile, the settings, the staff
+                     panel and the way out. They were four separate items competing
+                     for room with the section links, which is what pushed the bar
+                     into two lines. -->
+                <div class="nav-menu" v-if="user">
+                    <!-- @click.stop, or the document listener below would close the
+                         menu in the same click that opened it. -->
+                    <button class="nav-menu-trigger" :class="menuOpen ? 'is-open' : ''"
+                        type="button" aria-haspopup="true"
+                        :aria-expanded="menuOpen ? 'true' : 'false'"
+                        @click.stop="menuOpen = !menuOpen">
                         <img class="nav-user-avatar" :src="avatar" :alt="user.name">
-                        <span>{{ user.name }}</span>
-                    </a>
-                    <a class="button button-ghost button-small" href="/settings">Settings</a>
-                    <button class="button button-ghost button-small" @click="logout">Log out</button>
-                </template>
+                        <span class="nav-menu-name">{{ user.name }}</span>
+                        <span class="nav-menu-caret" aria-hidden="true">&#9662;</span>
+                    </button>
+
+                    <div class="nav-menu-panel" v-if="menuOpen" @click.stop>
+                        <a class="nav-menu-item" :href="'/u/' + user.id">Profile</a>
+                        <a class="nav-menu-item" href="/settings">Settings</a>
+
+                        <!-- Staff only, and set apart: it leaves the site proper for
+                             the panel, which is a different kind of place. -->
+                        <template v-if="isStaff">
+                            <span class="nav-menu-line"></span>
+                            <a class="nav-menu-item" href="/admin">Staff panel</a>
+                        </template>
+
+                        <span class="nav-menu-line"></span>
+
+                        <button class="nav-menu-item is-danger" type="button"
+                            @click="logout">Log out</button>
+                    </div>
+                </div>
 
                 <a class="button button-small" v-else href="/login">Log in</a>
 
@@ -54,7 +80,8 @@
     app.component("site-nav", {
         template: "#site-nav",
         data: () => ({
-            query: ""
+            query: "",
+            menuOpen: false
         }),
         computed: {
             site() {
@@ -92,6 +119,18 @@
                     { id: "api", label: "API", href: this.links.apiDocs, order: 40, external: true }
                 ];
             },
+            // The same four bits the server checks. This decides whether the
+            // staff entry appears in the account menu, never whether a request
+            // is allowed: every panel endpoint checks the privileges again.
+            isStaff() {
+                const user = this.$koneko.user;
+
+                if (!user) return false;
+
+                const staffMask = (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14);
+
+                return ((user.priv || 0) & staffMask) !== 0;
+            },
             // Plugin entries are already filtered by the server: one that needs
             // privileges is never sent to a browser that may not see it.
             navLinks() {
@@ -124,7 +163,28 @@
             async logout() {
                 await fetch("/auth/logout", { method: "POST" });
                 window.location.href = "/";
+            },
+            closeMenu() {
+                this.menuOpen = false;
+            },
+            onKey(event) {
+                if (event.key === "Escape") {
+                    this.menuOpen = false;
+                }
             }
+        },
+        /*
+         * A click anywhere else, or Escape, closes the menu. Listening on the
+         * document rather than on a blur handler is what makes a click on the
+         * page behind it dismiss the menu instead of being swallowed.
+         */
+        mounted() {
+            document.addEventListener("click", this.closeMenu);
+            document.addEventListener("keydown", this.onKey);
+        },
+        unmounted() {
+            document.removeEventListener("click", this.closeMenu);
+            document.removeEventListener("keydown", this.onKey);
         }
     });
 </script>

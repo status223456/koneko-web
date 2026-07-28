@@ -13,6 +13,7 @@ import com.osuserverlist.koneko.modules.Logging.KonekoWebLogger;
 import com.osuserverlist.koneko.plugin.PluginRoutes;
 import com.osuserverlist.koneko.plugin.PluginService;
 import com.osuserverlist.koneko.routes.AccountRoutes;
+import com.osuserverlist.koneko.routes.AdminRoutes;
 import com.osuserverlist.koneko.routes.AuthRoutes;
 import com.osuserverlist.koneko.routes.DataRoutes;
 import com.osuserverlist.koneko.routes.ViewRoutes;
@@ -93,6 +94,10 @@ public final class App {
             // The one path that needs the player's own access token, which
             // never leaves this service.
             AccountRoutes.register(config);
+
+            // The staff panel, which needs that token too. Registered before the
+            // plugins so no plugin can take over an /admin path.
+            AdminRoutes.register(config);
 
             // Last, so a plugin can never shadow a core route.
             PluginRoutes.register(config);
