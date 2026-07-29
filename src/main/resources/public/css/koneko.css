@@ -4229,3 +4229,25 @@ body {
     font-weight: 600;
     color: var(--muted);
 }
+
+/*
+ * The box the Cloudflare Turnstile widget renders itself into, on the
+ * registration form. The widget brings its own iframe and its own size, so all
+ * that is needed here is room around it and a centre line, since the iframe is
+ * narrower than the narrow card it sits in.
+ */
+.captcha {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 4px;
+    min-height: 65px;
+}
+
+/* The verification page: the two buttons sit side by side and wrap on a phone. */
+.verify-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 16px 0 4px;
+}

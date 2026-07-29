@@ -68,7 +68,18 @@
                     </div>
                 </div>
 
-                <a class="button button-small" v-else href="/login">Log in</a>
+                <template v-else>
+                    <!-- The way in for somebody who has no account yet sits next
+                         to the way in for somebody who has one, and disappears
+                         with REGISTRATION_ENABLED. -->
+                    <!-- button-ghost, not button-quiet: the latter only drops the
+                         background, and .button carries no border, so the label
+                         was left standing on nothing. -->
+                    <a class="button button-small button-ghost" v-if="registration.enabled"
+                        href="/register">Sign up</a>
+
+                    <a class="button button-small" href="/login">Log in</a>
+                </template>
 
                 <koneko-slot name="nav.actions"></koneko-slot>
             </div>
@@ -108,6 +119,9 @@
             },
             user() {
                 return this.$koneko.user;
+            },
+            registration() {
+                return this.$koneko.registration || { enabled: false };
             },
             // The links the site itself owns. Every one has an id, which is
             // what registry.hideNavItem(id) refers to.

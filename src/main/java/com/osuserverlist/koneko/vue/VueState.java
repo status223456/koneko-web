@@ -6,6 +6,7 @@ import java.util.Map;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.auth.Verification;
 import com.osuserverlist.koneko.config.SiteConfig;
 import com.osuserverlist.koneko.plugin.PluginBootstrap;
 import com.osuserverlist.koneko.plugin.PluginService;
@@ -35,6 +36,7 @@ public final class VueState {
         state.put("domain", App.env.getDomain());
         state.put("user", user(ctx));
         state.put("fastload", fastload());
+        state.put("registration", registration());
 
         // What the plugins contribute to every page: their slots, their
         // navigation entries and their own state keys.
@@ -51,6 +53,20 @@ public final class VueState {
         }
 
         return state;
+    }
+
+    /**
+     * What the registration form needs to know: whether it exists, and the
+     * public Turnstile site key it has to render its captcha with. The secret
+     * key never leaves bancho.jar.
+     */
+    private static Map<String, Object> registration() {
+        Map<String, Object> registration = new LinkedHashMap<>();
+        registration.put("enabled", App.env.isRegistrationEnabled());
+        registration.put("captcha", App.env.isCaptchaEnabled());
+        registration.put("turnstileSiteKey", App.env.getTurnstileSiteKey());
+
+        return registration;
     }
 
     /** FastLoad settings the browser needs to know about. */
@@ -99,10 +115,21 @@ public final class VueState {
             return null;
         }
 
+        // Re-checked here rather than read from the session, because this runs on every page
+        // load: it is what turns the verification page back into an ordinary site the moment
+        // the player has logged into the game.
+        boolean verified = Verification.verified(session);
+
         Map<String, Object> user = new LinkedHashMap<>();
         user.put("id", session.getUserId());
         user.put("name", session.getUsername());
         user.put("priv", session.getPrivileges());
+        user.put("verified", verified);
+
+        if (!verified) {
+            user.put("verifyPath", Verification.PATH);
+            user.put("verifyMessage", Verification.MESSAGE);
+        }
 
         return user;
     }

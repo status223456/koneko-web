@@ -17,9 +17,26 @@ import lombok.Setter;
 @Getter
 public final class UserSession {
 
+    /** The VERIFIED bit of the API's Privileges, mirrored here. */
+    private static final int VERIFIED = 1 << 1;
+
     private final int userId;
     private final String username;
-    private final int privileges;
+
+    /**
+     * Not final, because it can change while the session is open: an account registered on
+     * the website gains its VERIFIED bit the moment it logs into the game, and a session that
+     * could not see that would keep the player locked out until they logged out and back in.
+     */
+    @Setter
+    private volatile int privileges;
+
+    /**
+     * When the API was last asked whether this account is verified yet. Only used while it is
+     * not, so a verified session never pays for the check.
+     */
+    @Setter
+    private volatile Instant lastVerificationCheck = Instant.EPOCH;
 
     @Setter
     private volatile TokenPair tokens;
@@ -32,6 +49,11 @@ public final class UserSession {
         this.username = username;
         this.privileges = privileges;
         this.tokens = tokens;
+    }
+
+    /** True once the account has completed the in-game login that verifies it. */
+    public boolean isVerified() {
+        return (privileges & VERIFIED) != 0;
     }
 
     public void touch() {

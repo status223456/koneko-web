@@ -49,6 +49,17 @@ public final class Env {
     private final String apiBaseUrl;
     private final String level;
     private final String apiClientId;
+
+    /** Whether /register is served at all. */
+    private final boolean registrationEnabled;
+
+    /**
+     * Public site key of the Cloudflare Turnstile widget shown on the
+     * registration form. Empty means no captcha. The matching secret key lives
+     * in bancho.jar, which is where the answer is verified.
+     */
+    private final String turnstileSiteKey;
+
     private final int fastLoadTtlSeconds;
     private final int fastLoadStaleSeconds;
     private final int fastLoadClientTtlSeconds;
@@ -59,6 +70,8 @@ public final class Env {
         this.apiBaseUrl = stringOf(dotenv, "API_BASE_URL", "");
         this.level = stringOf(dotenv, "LEVEL", "PROD");
         this.apiClientId = stringOf(dotenv, "API_CLIENT_ID", "koneko-web");
+        this.registrationEnabled = booleanOf(dotenv, "REGISTRATION_ENABLED", true);
+        this.turnstileSiteKey = stringOf(dotenv, "TURNSTILE_SITE_KEY", "");
         this.fastLoadTtlSeconds = intOf(dotenv, "FASTLOAD_TTL_SECONDS", 15);
         this.fastLoadStaleSeconds = intOf(dotenv, "FASTLOAD_STALE_SECONDS", 120);
         this.fastLoadClientTtlSeconds = intOf(dotenv, "FASTLOAD_CLIENT_TTL_SECONDS", 600);
@@ -85,6 +98,11 @@ public final class Env {
         return !isDev();
     }
 
+    /** True while a Turnstile site key is configured. */
+    public boolean isCaptchaEnabled() {
+        return !turnstileSiteKey.isEmpty();
+    }
+
     private static String stringOf(Dotenv dotenv, String key, String fallback) {
         String value = System.getenv(key);
 
@@ -93,6 +111,20 @@ public final class Env {
         }
 
         return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static boolean booleanOf(Dotenv dotenv, String key, boolean fallback) {
+        String raw = System.getenv(key);
+
+        if (raw == null || raw.isBlank()) {
+            raw = dotenv.get(key);
+        }
+
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+
+        return Boolean.parseBoolean(raw.trim());
     }
 
     private static int intOf(Dotenv dotenv, String key, int fallback) {

@@ -1,15 +1,24 @@
 package com.osuserverlist.koneko.routes;
 
+import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.auth.Verification;
 import com.osuserverlist.koneko.vue.KonekoVue;
 
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.Context;
 import io.javalin.http.Handler;
 
 /**
  * The pages. Every one of them is a single Vue component, so the routing table
  * stays a table and all markup lives in the .vue files.
+ *
+ * <p>Every page except the verification page itself goes through
+ * {@link Verification}: an account that registered on the website but has never logged into
+ * the game is sent to {@code /verify} whatever it asks for. The check is per route rather than
+ * one filter in front of everything, so which pages are open is readable from this table
+ * instead of from a list of exceptions somewhere else.
  */
 public final class ViewRoutes {
 
@@ -17,19 +26,32 @@ public final class ViewRoutes {
     }
 
     public static void register(JavalinConfig config) {
-        config.routes.get("/", KonekoVue.component("home-view"));
-        config.routes.get("/login", KonekoVue.component("login-view"));
-        config.routes.get("/u/{identifier}", KonekoVue.component("profile-view"));
-        config.routes.get("/leaderboard", KonekoVue.component("leaderboard-view"));
-        config.routes.get("/beatmaps", KonekoVue.component("beatmaps-view"));
-        config.routes.get("/beatmapsets/{setId}", KonekoVue.component("beatmapset-view"));
+        config.routes.get("/", page("home-view"));
+        config.routes.get("/login", page("login-view"));
+
+        // Only served while REGISTRATION_ENABLED is on, so a closed server
+        // answers a plain 404 instead of a form nothing will accept.
+        if (App.env.isRegistrationEnabled()) {
+            config.routes.get("/register", page("register-view"));
+        }
+
+        // The one page an unverified account may open, and the only one that is not gated:
+        // this is where the gate explains itself.
+        Handler verifyPage = KonekoVue.component("verify-view");
+
+        config.routes.get(Verification.PATH, ctx -> verify(ctx, verifyPage));
+
+        config.routes.get("/u/{identifier}", page("profile-view"));
+        config.routes.get("/leaderboard", page("leaderboard-view"));
+        config.routes.get("/beatmaps", page("beatmaps-view"));
+        config.routes.get("/beatmapsets/{setId}", page("beatmapset-view"));
         // Not in the navigation: reached through the search box in the bar.
-        config.routes.get("/players", KonekoVue.component("players-view"));
-        config.routes.get("/scores/{scoreId}", KonekoVue.component("score-view"));
+        config.routes.get("/players", page("players-view"));
+        config.routes.get("/scores/{scoreId}", page("score-view"));
 
         // Only renders forms; what may actually be changed is decided by the
         // API when the form is submitted.
-        config.routes.get("/settings", KonekoVue.component("settings-view"));
+        config.routes.get("/settings", page("settings-view"));
 
         // Convenience route so the navigation bar can link to a profile
         // without knowing the id up front.
@@ -38,6 +60,10 @@ public final class ViewRoutes {
 
             if (session == null) {
                 ctx.redirect("/login");
+                return;
+            }
+
+            if (Verification.blocksPage(ctx)) {
                 return;
             }
 
@@ -65,6 +91,49 @@ public final class ViewRoutes {
     }
 
     /**
+     * An ordinary page: rendered for everyone, except an account that still owes the server an
+     * in-game login.
+     *
+     * <p>Visitors who are not logged in are not affected. Being unverified is a property of an
+     * account, and someone browsing without one simply sees the public site.
+     */
+    private static Handler page(String component) {
+        Handler rendered = KonekoVue.component(component);
+
+        return ctx -> {
+            if (Verification.blocksPage(ctx)) {
+                return;
+            }
+
+            rendered.handle(ctx);
+        };
+    }
+
+    /**
+     * The verification page.
+     *
+     * <p>Only reachable while it is needed: a visitor with no session is sent to the login
+     * form, and an account that has already logged into the game is sent to its profile, so
+     * the page cannot be bookmarked into a dead end. It also re-checks with the API on every
+     * load, which is what makes the redirect happen by itself once the player connects.
+     */
+    private static void verify(Context ctx, Handler page) throws Exception {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            ctx.redirect("/login");
+            return;
+        }
+
+        if (Verification.verified(session)) {
+            ctx.redirect("/u/" + session.getUserId());
+            return;
+        }
+
+        page.handle(ctx);
+    }
+
+    /**
      * A page only staff may open.
      *
      * <p>A visitor who is not logged in is sent to the login form, because that is probably what
@@ -82,6 +151,12 @@ public final class ViewRoutes {
 
             if (session == null) {
                 ctx.redirect("/login");
+                return;
+            }
+
+            // Checked before the staff bits, because an unverified account has no business
+            // reaching the panel even if someone handed it a moderator bit early.
+            if (Verification.blocksPage(ctx)) {
                 return;
             }
 

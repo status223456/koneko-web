@@ -31,7 +31,13 @@
                 </button>
             </form>
 
-            <p class="muted small">
+            <p class="muted small" v-if="registration.enabled">
+                No account yet? <a href="/register">Create one</a>.
+                You can also register from inside the game: start osu! with
+                <code>-devserver {{ domain }}</code>.
+            </p>
+
+            <p class="muted small" v-else>
                 Accounts are created in game. Start osu! with
                 <code>-devserver {{ domain }}</code> and use <code>!register</code>,
                 or ask on the Discord.
@@ -63,6 +69,9 @@
             },
             domain() {
                 return this.$koneko.domain;
+            },
+            registration() {
+                return this.$koneko.registration || { enabled: false };
             }
         },
         methods: {

@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.osuserverlist.koneko.auth.Auth;
+import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.auth.Verification;
 import com.osuserverlist.koneko.vue.VueState;
 
 import io.javalin.config.JavalinConfig;
@@ -35,6 +38,11 @@ public final class DataRoutes {
     public static void register(JavalinConfig config) {
         config.routes.get("/data/bootstrap.js", DataRoutes::bootstrap);
         config.routes.get("/data/session", DataRoutes::session);
+
+        // Never gated: this is how the verification page finds out that it is no longer
+        // needed, and gating it would leave that page asking a question it cannot get an
+        // answer to.
+        config.routes.get("/data/verification", DataRoutes::verification);
     }
 
     /**
@@ -62,6 +70,30 @@ public final class DataRoutes {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("user", VueState.user(ctx));
 
+        ctx.json(body);
+    }
+
+    /**
+     * Whether the account of this session has completed its in-game login yet.
+     *
+     * <p>Polled by the verification page while the player is logging into osu!, and answered
+     * from the API rather than from anything remembered here, so the page turns itself into a
+     * redirect within seconds of them connecting.
+     */
+    private static void verification(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        boolean verified = session != null && Verification.verified(session);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("loggedIn", session != null);
+        body.put("verified", verified);
+
+        if (session != null && !verified) {
+            body.put("status", Verification.MESSAGE);
+        }
+
+        ctx.header("Cache-Control", "private, no-store");
         ctx.json(body);
     }
 }

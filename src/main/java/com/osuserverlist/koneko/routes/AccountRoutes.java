@@ -11,6 +11,7 @@ import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.auth.Verification;
 
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.Context;
@@ -58,6 +59,12 @@ public final class AccountRoutes {
             return;
         }
 
+        // An account waiting for its first in-game login has nothing to read or change here
+        // yet, and the API would refuse the token anyway.
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+
         try {
             JsonNode body = App.api.getAuthed("/api/v1/me", Map.of(),
                     session.getTokens().getAccessToken());
@@ -82,6 +89,12 @@ public final class AccountRoutes {
 
         if (session == null) {
             deny(ctx);
+            return;
+        }
+
+        // An account waiting for its first in-game login has nothing to read or change here
+        // yet, and the API would refuse the token anyway.
+        if (Verification.blocksApi(ctx, session)) {
             return;
         }
 

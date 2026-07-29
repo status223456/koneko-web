@@ -11,6 +11,7 @@ import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.auth.Verification;
 
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.Context;
@@ -107,6 +108,11 @@ public final class AdminRoutes {
             return;
         }
 
+        // Staff or not, an account that has never logged into the game is not usable yet.
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+
         try {
             JsonNode body = App.api.getAuthed(path, query(ctx),
                     session.getTokens().getAccessToken());
@@ -133,6 +139,11 @@ public final class AdminRoutes {
 
         if (!isStaff(session)) {
             deny(ctx);
+            return;
+        }
+
+        // Staff or not, an account that has never logged into the game is not usable yet.
+        if (Verification.blocksApi(ctx, session)) {
             return;
         }
 

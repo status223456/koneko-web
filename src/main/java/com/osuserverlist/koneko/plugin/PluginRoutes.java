@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.osuserverlist.koneko.App;
+import com.osuserverlist.koneko.auth.Verification;
 import com.osuserverlist.koneko.plugin.api.PluginFilter;
 import com.osuserverlist.koneko.vue.KonekoVue;
 
@@ -75,6 +76,13 @@ public final class PluginRoutes {
             Handler render = KonekoVue.component(entry.page().component(), entry.page().status());
 
             config.routes.get(path, ctx -> {
+                // A plugin page is still a page of this site, so an account that has not
+                // logged into the game yet is sent to the verification page from here too.
+                // A plugin cannot opt out of that, which is the point.
+                if (Verification.blocksPage(ctx)) {
+                    return;
+                }
+
                 if (!PluginGuard.allowPage(ctx, entry.page().requiresLogin(),
                         entry.page().minPrivileges())) {
                     return;
@@ -97,6 +105,10 @@ public final class PluginRoutes {
             String path = entry.mountedPath();
 
             Handler guarded = ctx -> {
+                if (Verification.blocksApi(ctx)) {
+                    return;
+                }
+
                 if (!PluginGuard.allowAction(ctx, entry.action().requiresLogin(),
                         entry.action().minPrivileges())) {
                     return;

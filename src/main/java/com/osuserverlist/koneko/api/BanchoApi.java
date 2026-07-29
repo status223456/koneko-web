@@ -89,6 +89,53 @@ public final class BanchoApi {
         return tokenPairOf(postForm("/api/v1/oauth/token", form));
     }
 
+    /**
+     * A freshly registered account, together with the token pair the API issued
+     * for it. The pair is null only when the account was created but the API
+     * could not log it in, in which case the player has to use the login form.
+     */
+    public record Registration(int id, String name, int privileges, TokenPair tokens) {
+    }
+
+    /**
+     * Creates an account and logs it in, in one call.
+     *
+     * <p>The registration endpoint answers with the same token pair the token
+     * endpoint would, so there is no second round trip with the password. The
+     * captcha token is only passed through: it is verified by bancho.jar, which
+     * is the side that holds the Turnstile secret.
+     *
+     * @param captchaToken the cf-turnstile-response value, may be null when the
+     *                     server runs without a captcha
+     */
+    public Registration registerAccount(String username, String email, String password,
+            String captchaToken, String scope) throws ApiException {
+
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put("username", username);
+        form.put("email", email);
+        form.put("password", password);
+        form.put("scope", scope);
+        form.put("client_id", clientId);
+
+        if (captchaToken != null && !captchaToken.isBlank()) {
+            form.put("cf-turnstile-response", captchaToken);
+        }
+
+        JsonNode body = postForm("/api/v1/users/register", form);
+        JsonNode user = body.path("user");
+
+        TokenPair tokens = body.path("access_token").asText("").isBlank()
+                ? null
+                : tokenPairOf(body);
+
+        return new Registration(
+                user.path("id").asInt(),
+                user.path("name").asText(username),
+                user.path("priv").asInt(),
+                tokens);
+    }
+
     /** Rotates a refresh token into a fresh pair. */
     public TokenPair refresh(String refreshToken) throws ApiException {
         Map<String, String> form = new LinkedHashMap<>();
