@@ -7,6 +7,7 @@ import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
 import com.osuserverlist.koneko.auth.Verification;
+import com.osuserverlist.koneko.config.CaptchaProvider;
 import com.osuserverlist.koneko.config.SiteConfig;
 import com.osuserverlist.koneko.plugin.PluginBootstrap;
 import com.osuserverlist.koneko.plugin.PluginService;
@@ -55,16 +56,18 @@ public final class VueState {
         return state;
     }
 
-    /**
-     * What the registration form needs to know: whether it exists, and the
-     * public Turnstile site key it has to render its captcha with. The secret
-     * key never leaves bancho.jar.
-     */
     private static Map<String, Object> registration() {
+        boolean captcha = App.env.isCaptchaEnabled();
+        CaptchaProvider provider = captcha ? App.env.getCaptchaProvider() : CaptchaProvider.NONE;
+
         Map<String, Object> registration = new LinkedHashMap<>();
         registration.put("enabled", App.env.isRegistrationEnabled());
-        registration.put("captcha", App.env.isCaptchaEnabled());
-        registration.put("turnstileSiteKey", App.env.getTurnstileSiteKey());
+        registration.put("captcha", captcha);
+        registration.put("captchaProvider", provider.name());
+        registration.put("captchaSiteKey", captcha ? App.env.getCaptchaSiteKey() : "");
+        registration.put("captchaField", provider.getField());
+        registration.put("captchaScript", provider.getScriptUrl());
+        registration.put("captchaGlobal", provider.getGlobalName());
 
         return registration;
     }

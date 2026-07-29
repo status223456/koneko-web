@@ -97,19 +97,8 @@ public final class BanchoApi {
     public record Registration(int id, String name, int privileges, TokenPair tokens) {
     }
 
-    /**
-     * Creates an account and logs it in, in one call.
-     *
-     * <p>The registration endpoint answers with the same token pair the token
-     * endpoint would, so there is no second round trip with the password. The
-     * captcha token is only passed through: it is verified by bancho.jar, which
-     * is the side that holds the Turnstile secret.
-     *
-     * @param captchaToken the cf-turnstile-response value, may be null when the
-     *                     server runs without a captcha
-     */
     public Registration registerAccount(String username, String email, String password,
-            String captchaToken, String scope) throws ApiException {
+            String captchaToken, String captchaField, String scope) throws ApiException {
 
         Map<String, String> form = new LinkedHashMap<>();
         form.put("username", username);
@@ -118,8 +107,9 @@ public final class BanchoApi {
         form.put("scope", scope);
         form.put("client_id", clientId);
 
-        if (captchaToken != null && !captchaToken.isBlank()) {
-            form.put("cf-turnstile-response", captchaToken);
+        if (captchaToken != null && !captchaToken.isBlank()
+                && captchaField != null && !captchaField.isBlank()) {
+            form.put(captchaField, captchaToken);
         }
 
         JsonNode body = postForm("/api/v1/users/register", form);

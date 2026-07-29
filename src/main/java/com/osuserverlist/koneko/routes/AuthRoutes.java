@@ -14,6 +14,7 @@ import com.osuserverlist.koneko.api.BanchoApi;
 import com.osuserverlist.koneko.api.TokenPair;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
+import com.osuserverlist.koneko.config.CaptchaProvider;
 import com.osuserverlist.koneko.config.Env;
 import com.osuserverlist.koneko.plugin.PluginService;
 import com.osuserverlist.koneko.plugin.api.Events;
@@ -105,7 +106,7 @@ public final class AuthRoutes {
      * with the token pair that comes back, so a new player lands on their own
      * profile instead of on the login form.
      *
-     * <p>The Cloudflare Turnstile token is only carried through to bancho.jar,
+     * <p>The captcha token is only carried through to bancho.jar,
      * which holds the secret key and does the verifying. Doing it here would be
      * pointless: the registration endpoint is public, so the check has to sit
      * with the endpoint that writes the row.
@@ -120,7 +121,16 @@ public final class AuthRoutes {
         String email = field(ctx, "email");
         String password = field(ctx, "password");
         String confirmation = field(ctx, "password_confirmation");
-        String captcha = field(ctx, "cf-turnstile-response");
+        String captchaField = App.env.getCaptchaField();
+        String captcha = captchaField.isEmpty() ? null : field(ctx, captchaField);
+
+        if (captcha == null || captcha.isBlank()) {
+            captcha = field(ctx, CaptchaProvider.TURNSTILE.getField());
+        }
+
+        if (captcha == null || captcha.isBlank()) {
+            captcha = field(ctx, CaptchaProvider.RECAPTCHA.getField());
+        }
 
         if (username == null || username.isBlank()
                 || email == null || email.isBlank()
@@ -145,7 +155,7 @@ public final class AuthRoutes {
 
         try {
             BanchoApi.Registration created = App.api.registerAccount(username.trim(), email.trim(),
-                    password, captcha, Env.DEFAULT_API_SCOPES);
+                    password, captcha, captchaField, Env.DEFAULT_API_SCOPES);
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("status", "success");

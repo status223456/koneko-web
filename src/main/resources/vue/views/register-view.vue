@@ -50,9 +50,6 @@
                     8 to 32 characters, and more than three different ones.
                 </p>
 
-                <!-- The Cloudflare Turnstile widget renders itself into this box.
-                     It only exists when a site key is configured, and its answer
-                     is verified by the backend, never here. -->
                 <div class="captcha" v-if="captchaEnabled" ref="captcha"></div>
 
                 <p class="error" v-if="error">{{ error }}</p>
@@ -86,9 +83,6 @@
             confirmation: "",
             error: "",
             busy: false,
-
-            // Filled by the Turnstile callback, cleared after every attempt:
-            // a token may only be verified once.
             captchaToken: "",
             widgetId: null
         }),
@@ -106,10 +100,20 @@
                 return this.$koneko.registration || { enabled: false };
             },
             captchaEnabled() {
-                return !!(this.registration.captcha && this.registration.turnstileSiteKey);
+                return !!(this.registration.captcha
+                    && this.registration.captchaSiteKey
+                    && this.registration.captchaScript
+                    && this.registration.captchaGlobal);
             }
         },
         methods: {
+            captchaApi() {
+                const global = this.registration.captchaGlobal;
+                const api = global ? window[global] : null;
+
+                return api && typeof api.render === "function" ? api : null;
+            },
+
             async submit() {
                 if (this.password !== this.confirmation) {
                     this.error = "The two passwords do not match.";
@@ -125,16 +129,23 @@
                 this.error = "";
 
                 try {
+                    const payload = {
+                        username: this.username,
+                        email: this.email,
+                        password: this.password,
+                        password_confirmation: this.confirmation
+                    };
+
+                    // The token field is named by the provider, so the backend
+                    // reads it back under the same name it told us to use.
+                    if (this.captchaEnabled) {
+                        payload[this.registration.captchaField] = this.captchaToken;
+                    }
+
                     const response = await fetch("/auth/register", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            username: this.username,
-                            email: this.email,
-                            password: this.password,
-                            password_confirmation: this.confirmation,
-                            "cf-turnstile-response": this.captchaToken
-                        })
+                        body: JSON.stringify(payload)
                     });
 
                     const body = await response.json();
@@ -168,45 +179,43 @@
                 }
             },
 
-            /**
-             * Loads the Turnstile script once and renders the widget explicitly,
-             * so no other page of the site pays for a script it never uses.
-             */
             mountCaptcha() {
                 if (!this.captchaEnabled || this.user) {
                     return;
                 }
 
-                if (window.turnstile) {
+                if (this.captchaApi()) {
                     this.renderCaptcha();
                     return;
                 }
 
                 // Several mounts of this view share one script tag and one
                 // onload callback queue.
-                window.__konekoTurnstileQueue = window.__konekoTurnstileQueue || [];
-                window.__konekoTurnstileQueue.push(() => this.renderCaptcha());
+                window.__konekoCaptchaQueue = window.__konekoCaptchaQueue || [];
+                window.__konekoCaptchaQueue.push(() => this.renderCaptcha());
 
-                if (window.__konekoTurnstileLoading) {
+                if (window.__konekoCaptchaLoading) {
                     return;
                 }
 
-                window.__konekoTurnstileLoading = true;
+                window.__konekoCaptchaLoading = true;
 
-                window.onloadKonekoTurnstile = () => {
-                    const queue = window.__konekoTurnstileQueue || [];
-                    window.__konekoTurnstileQueue = [];
+                window.onloadKonekoCaptcha = () => {
+                    const queue = window.__konekoCaptchaQueue || [];
+                    window.__konekoCaptchaQueue = [];
                     queue.forEach(render => render());
                 };
 
+                const source = this.registration.captchaScript;
+                const separator = source.indexOf("?") === -1 ? "?" : "&";
+
                 const script = document.createElement("script");
-                script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
-                    + "?render=explicit&onload=onloadKonekoTurnstile";
+                script.src = source + separator + "render=explicit&onload=onloadKonekoCaptcha";
                 script.async = true;
                 script.defer = true;
 
                 script.onerror = () => {
-                    window.__konekoTurnstileLoading = false;
+                    window.__konekoCaptchaLoading = false;
                     this.error = "The captcha could not be loaded. Please reload the page.";
                 };
 
@@ -214,12 +223,14 @@
             },
 
             renderCaptcha() {
-                if (!window.turnstile || !this.$refs.captcha || this.widgetId !== null) {
+                const api = this.captchaApi();
+
+                if (!api || !this.$refs.captcha || this.widgetId !== null) {
                     return;
                 }
 
-                this.widgetId = window.turnstile.render(this.$refs.captcha, {
-                    sitekey: this.registration.turnstileSiteKey,
+                this.widgetId = api.render(this.$refs.captcha, {
+                    sitekey: this.registration.captchaSiteKey,
                     callback: token => {
                         this.captchaToken = token;
                     },
@@ -235,8 +246,10 @@
             resetCaptcha() {
                 this.captchaToken = "";
 
-                if (window.turnstile && this.widgetId !== null) {
-                    window.turnstile.reset(this.widgetId);
+                const api = this.captchaApi();
+
+                if (api && api.reset && this.widgetId !== null) {
+                    api.reset(this.widgetId);
                 }
             }
         },
@@ -247,10 +260,19 @@
             this.mountCaptcha();
         },
         unmounted() {
-            if (window.turnstile && this.widgetId !== null) {
-                window.turnstile.remove(this.widgetId);
-                this.widgetId = null;
+            const api = this.captchaApi();
+
+            if (this.widgetId === null) {
+                return;
             }
+
+            if (api && typeof api.remove === "function") {
+                api.remove(this.widgetId);
+            } else if (api && api.reset) {
+                api.reset(this.widgetId);
+            }
+
+            this.widgetId = null;
         }
     });
 </script>
