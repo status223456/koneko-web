@@ -2,6 +2,7 @@ package com.osuserverlist.koneko.routes;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,9 @@ public final class AccountRoutes {
 
     private static final Logger logger = LoggerFactory.getLogger("AccountRoutes");
 
+    /** Cropped 512px PNGs are normally below 1 MB; leave room for noisy images. */
+    private static final int MAX_AVATAR_BYTES = 4 * 1024 * 1024;
+
     /** What the browser may post, and where it goes on the API. */
     private static final Map<String, String> ACTIONS = Map.of(
             "update", "/api/v1/me/update",
@@ -44,7 +48,76 @@ public final class AccountRoutes {
 
     public static void register(JavalinConfig config) {
         config.routes.get("/account/me", AccountRoutes::me);
+        config.routes.post("/account/avatar", AccountRoutes::avatar);
         config.routes.post("/account/{action}", AccountRoutes::action);
+    }
+
+    /**
+     * Proxies the cropped image without ever exposing the API token to the browser.
+     * The API performs the authoritative decode/re-encode checks; the checks here
+     * reject oversized and cross-site requests before they consume backend work.
+     */
+    private static void avatar(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            deny(ctx);
+            return;
+        }
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+        if (!sameOrigin(ctx)) {
+            ctx.status(403).json(Map.of("status", "Cross-site avatar uploads are not allowed."));
+            return;
+        }
+
+        String contentType = ctx.contentType();
+        if (contentType == null || !contentType.equalsIgnoreCase("image/png")) {
+            ctx.status(415).json(Map.of("status", "The cropped avatar must be a PNG image."));
+            return;
+        }
+
+        long declared = ctx.contentLength();
+        if (declared <= 0 || declared > MAX_AVATAR_BYTES) {
+            ctx.status(413).json(Map.of("status", "The avatar is too large (4 MB maximum)."));
+            return;
+        }
+
+        byte[] image = ctx.bodyAsBytes();
+        if (image.length == 0 || image.length > MAX_AVATAR_BYTES) {
+            ctx.status(413).json(Map.of("status", "The avatar is too large (4 MB maximum)."));
+            return;
+        }
+
+        try {
+            JsonNode body = App.api.requestBytes("POST", "/api/v1/me/avatar", image,
+                    "image/png", session.getTokens().getAccessToken());
+            ctx.header("Cache-Control", "private, no-store");
+            ctx.json(body);
+        } catch (ApiException e) {
+            fail(ctx, e, "avatar");
+        }
+    }
+
+    private static boolean sameOrigin(Context ctx) {
+        String fetchSite = ctx.header("Sec-Fetch-Site");
+        if (fetchSite != null && fetchSite.equalsIgnoreCase("cross-site")) {
+            return false;
+        }
+
+        String origin = ctx.header("Origin");
+        if (origin == null || origin.isBlank()) {
+            return true;
+        }
+
+        try {
+            URI uri = URI.create(origin);
+            String host = ctx.header("Host");
+            return host != null && host.equalsIgnoreCase(uri.getAuthority());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     /**

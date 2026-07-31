@@ -97,6 +97,17 @@ public final class BanchoApi {
     public record Registration(int id, String name, int privileges, TokenPair tokens) {
     }
 
+    /**
+     * Backwards-compatible registration signature used by older AuthRoutes.
+     * Those versions only supported Turnstile and therefore did not pass the
+     * captcha form field separately.
+     */
+    public Registration registerAccount(String username, String email, String password,
+            String captchaToken, String scope) throws ApiException {
+        return registerAccount(username, email, password, captchaToken,
+                "cf-turnstile-response", scope);
+    }
+
     public Registration registerAccount(String username, String email, String password,
             String captchaToken, String captchaField, String scope) throws ApiException {
 
@@ -238,6 +249,28 @@ public final class BanchoApi {
             case "POST", "PUT", "PATCH" -> builder.method(verb, publisher);
             default -> throw new ApiException(400, "Unsupported HTTP method: " + verb);
         }
+
+        return send(builder);
+    }
+
+    /**
+     * Sends a small binary body to an authenticated API endpoint.
+     *
+     * <p>This is deliberately separate from {@link #request}: converting an
+     * image to a String would corrupt it, and accepting arbitrary multipart
+     * data here would forward filenames and other untrusted metadata the API
+     * does not need.</p>
+     */
+    public JsonNode requestBytes(String method, String path, byte[] body,
+            String contentType, String accessToken) throws ApiException {
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .timeout(timeout)
+                .header("Accept", "application/json")
+                .header("Content-Type", contentType)
+                .header("Authorization", "Bearer " + accessToken)
+                .method(method.trim().toUpperCase(java.util.Locale.ROOT),
+                        HttpRequest.BodyPublishers.ofByteArray(body));
 
         return send(builder);
     }

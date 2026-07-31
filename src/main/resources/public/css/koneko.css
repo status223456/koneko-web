@@ -2581,6 +2581,165 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
+.avatar-input {
+    display: none;
+}
+
+.avatar-picker {
+    position: relative;
+    display: block;
+    width: 76px;
+    height: 76px;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.avatar-picker .settings-avatar {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-picker-label {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 5px 4px;
+    background: rgba(0, 0, 0, 0.72);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.avatar-picker:hover .avatar-picker-label,
+.avatar-picker:focus-visible .avatar-picker-label {
+    opacity: 1;
+}
+
+.avatar-editor-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.avatar-editor {
+    width: min(100%, 520px);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-panel);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.avatar-editor-head,
+.avatar-editor-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.avatar-editor-head h3,
+.avatar-editor-head p {
+    margin-top: 0;
+}
+
+.avatar-editor-close {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.avatar-crop-stage {
+    position: relative;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 16px auto 10px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    cursor: crosshair;
+}
+
+.avatar-crop-image {
+    display: block;
+    max-width: 100%;
+    max-height: 52vh;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.avatar-crop-shade {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+
+.avatar-crop-box {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+    cursor: move;
+}
+
+.avatar-crop-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 2px;
+}
+
+.handle-nw { top: -7px; left: -7px; cursor: nwse-resize; }
+.handle-ne { top: -7px; right: -7px; cursor: nesw-resize; }
+.handle-sw { bottom: -7px; left: -7px; cursor: nesw-resize; }
+.handle-se { bottom: -7px; right: -7px; cursor: nwse-resize; }
+
+.avatar-crop-size {
+    margin: 0 0 18px;
+    text-align: center;
+}
+
+.avatar-editor-actions {
+    justify-content: flex-end;
+    align-items: center;
+}
+
+@media (max-width: 560px) {
+    .avatar-editor-backdrop {
+        padding: 12px;
+    }
+
+    .avatar-editor {
+        max-height: calc(100vh - 24px);
+        padding: 16px;
+    }
+}
+
 .settings-head h2 {
     margin: 0 0 4px;
 }

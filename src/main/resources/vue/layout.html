@@ -14,7 +14,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="/css/koneko.css">
+    <!-- The query is bumped whenever koneko.css changes so browsers cannot keep
+         serving a stale stylesheet out of their disk cache. -->
+    <link rel="stylesheet" href="/css/koneko.css?v=avatar-crop-2">
 
     <!-- Stylesheets and head html contributed by .jar plugins. -->
 @pluginHead
