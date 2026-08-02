@@ -43,6 +43,9 @@ public final class ViewRoutes {
 
         config.routes.get("/u/{identifier}", page("profile-view"));
         config.routes.get("/leaderboard", page("leaderboard-view"));
+        // Open to everybody, including an account that is restricted: it is
+        // the page that explains what a restriction is.
+        config.routes.get("/restrictions", KonekoVue.component("restrictions-view"));
         config.routes.get("/beatmaps", page("beatmaps-view"));
         config.routes.get("/beatmapsets/{setId}", page("beatmapset-view"));
         // Not in the navigation: reached through the search box in the bar.

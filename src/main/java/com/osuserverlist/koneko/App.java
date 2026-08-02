@@ -16,6 +16,7 @@ import com.osuserverlist.koneko.routes.AccountRoutes;
 import com.osuserverlist.koneko.routes.AdminRoutes;
 import com.osuserverlist.koneko.routes.AuthRoutes;
 import com.osuserverlist.koneko.routes.DataRoutes;
+import com.osuserverlist.koneko.routes.DocsRoutes;
 import com.osuserverlist.koneko.routes.ViewRoutes;
 import com.osuserverlist.koneko.vue.KonekoVue;
 
@@ -90,6 +91,9 @@ public final class App {
             ViewRoutes.register(config);
             AuthRoutes.register(config);
             DataRoutes.register(config);
+
+            // The Markdown documents behind the static text pages.
+            DocsRoutes.register(config);
 
             // The one path that needs the player's own access token, which
             // never leaves this service.

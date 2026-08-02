@@ -1,4 +1,8 @@
 <template id="site-nav">
+    <!-- The restriction strip belongs above everything, so it is part of the
+         bar every page already renders rather than something each page has to
+         remember to include. It renders nothing at all unless the account
+         looking at the page is restricted. -->
     <header class="nav">
         <div class="nav-inner">
             <a class="nav-brand" href="/">
@@ -84,6 +88,8 @@
                 <koneko-slot name="nav.actions"></koneko-slot>
             </div>
         </div>
+
+        <restriction-banner></restriction-banner>
     </header>
 </template>
 

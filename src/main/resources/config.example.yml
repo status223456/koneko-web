@@ -39,6 +39,14 @@ home:
   # Game mode the front page leaderboard uses (0 = osu!standard).
   leaderboard_mode: 0
 
+  # Show the "new players" panel and how many rows it has.
+  show_new_players: true
+  new_players_size: 5
+
+  # Show the "best scores" panel (highest pp plays) and how many rows it has.
+  show_top_scores: true
+  top_scores_size: 5
+
   # Show the "how to connect" block with the -devserver instructions.
   show_connect_guide: true
 

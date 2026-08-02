@@ -1,0 +1,287 @@
+/*
+    The front page panels, the restriction strip and the Markdown pages.
+
+    A file of its own rather than more lines at the end of koneko.css: these
+    three pieces arrived together and are the only things that use them, so a
+    server that restyles them has one file to look at.
+*/
+
+/* --- Front page panels: new players, best scores --- */
+
+.home-panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.home-panel {
+    margin: 0;
+}
+
+.home-panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.home-panel-head h2 {
+    margin: 0;
+}
+
+.home-panel-more {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.home-panel-more:hover {
+    color: var(--accent);
+}
+
+.home-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+}
+
+.home-list-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.home-list-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.home-list-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    background: var(--bg-soft);
+    flex: none;
+}
+
+/* The position in the best scores list: same width as an avatar, so the two
+   panels line up side by side. */
+.home-list-rank {
+    width: 36px;
+    flex: none;
+    text-align: center;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.home-list-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.home-list-name {
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-list-name:hover {
+    color: var(--accent);
+}
+
+.home-list-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-list-pp {
+    flex: none;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.home-list-pp .unit {
+    font-size: 0.75rem;
+    margin-left: 2px;
+    color: var(--muted);
+}
+
+/*
+    --- The strip a restricted account sees on every page ---
+
+    It is the bottom row of the bar, not a floating element: the bar is sticky,
+    so the strip travels with it and never drifts across the page. The bar is
+    a wrapping flex row, so a full width child simply takes a line of its own,
+    inside the content width the rest of the bar uses.
+
+    Tinted rather than filled, so whatever is behind the bar reads through it.
+*/
+
+.restriction-banner {
+    flex: 0 0 100%;
+    width: 100%;
+    margin-bottom: 10px;
+
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+
+    border-radius: var(--radius-sm);
+    background: rgba(150, 24, 40, 0.72);
+    color: #fff;
+}
+
+.restriction-banner-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    /* A shade darker than the rest of the strip, so the label reads as its own
+       column without being a separate box. */
+    background: rgba(20, 4, 8, 0.45);
+    flex: none;
+}
+
+.restriction-banner-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    flex: none;
+}
+
+.restriction-banner-label-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.restriction-banner-title {
+    font-weight: 700;
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+.restriction-banner-subtitle {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.restriction-banner-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5px 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.restriction-banner-text {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+.restriction-banner-link {
+    color: #ffcc4d;
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+.restriction-banner-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+/* On a narrow screen the two columns stack, and the label wraps. */
+@media (max-width: 700px) {
+    .restriction-banner {
+        flex-direction: column;
+    }
+
+    .restriction-banner-subtitle {
+        white-space: normal;
+    }
+}
+
+/* --- Markdown documents: /restrictions and anything else in /docs --- */
+
+.doc-page {
+    max-width: 860px;
+    margin: 24px auto;
+}
+
+.doc-body h1 {
+    margin: 0 0 12px;
+    font-size: 1.8rem;
+}
+
+.doc-body h2 {
+    margin: 28px 0 10px;
+    font-size: 1.25rem;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.doc-body h3 {
+    margin: 20px 0 8px;
+    font-size: 1.05rem;
+}
+
+.doc-body p,
+.doc-body li {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.doc-body ul,
+.doc-body ol {
+    padding-left: 20px;
+}
+
+.doc-body li {
+    margin: 6px 0;
+}
+
+.doc-body strong {
+    color: var(--text);
+}
+
+.doc-body blockquote {
+    margin: 20px 0 0;
+    padding: 12px 16px;
+    border-left: 3px solid var(--accent);
+    background: var(--bg-soft);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--muted);
+}
+
+.doc-body table {
+    margin-top: 12px;
+}
+
+.doc-body pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    overflow-x: auto;
+}

@@ -20,6 +20,12 @@ public final class UserSession {
     /** The VERIFIED bit of the API's Privileges, mirrored here. */
     private static final int VERIFIED = 1 << 1;
 
+    /**
+     * The UNRESTRICTED bit of the API's Privileges. A restriction clears it, so
+     * an account missing it is one the staff has taken out of the community.
+     */
+    private static final int UNRESTRICTED = 1 << 0;
+
     private final int userId;
     private final String username;
 
@@ -54,6 +60,11 @@ public final class UserSession {
     /** True once the account has completed the in-game login that verifies it. */
     public boolean isVerified() {
         return (privileges & VERIFIED) != 0;
+    }
+
+    /** True while the account is restricted, which is what the banner reads. */
+    public boolean isRestricted() {
+        return (privileges & UNRESTRICTED) == 0;
     }
 
     public void touch() {

@@ -104,6 +104,20 @@ public final class SiteConfig {
         @JsonProperty("leaderboard_mode")
         private int leaderboardMode = 0;
 
+        /** The "new players" panel: who registered most recently. */
+        @JsonProperty("show_new_players")
+        private boolean showNewPlayers = true;
+
+        @JsonProperty("new_players_size")
+        private int newPlayersSize = 5;
+
+        /** The "best scores" panel: the highest pp plays on the server. */
+        @JsonProperty("show_top_scores")
+        private boolean showTopScores = true;
+
+        @JsonProperty("top_scores_size")
+        private int topScoresSize = 5;
+
         @JsonProperty("show_connect_guide")
         private boolean showConnectGuide = true;
 

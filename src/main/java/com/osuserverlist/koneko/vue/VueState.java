@@ -100,6 +100,10 @@ public final class VueState {
         home.put("showLeaderboard", config.getHome().isShowLeaderboard());
         home.put("leaderboardSize", config.getHome().getLeaderboardSize());
         home.put("leaderboardMode", config.getHome().getLeaderboardMode());
+        home.put("showNewPlayers", config.getHome().isShowNewPlayers());
+        home.put("newPlayersSize", config.getHome().getNewPlayersSize());
+        home.put("showTopScores", config.getHome().isShowTopScores());
+        home.put("topScoresSize", config.getHome().getTopScoresSize());
         home.put("showConnectGuide", config.getHome().isShowConnectGuide());
         home.put("heroImage", config.getHome().getHeroImage());
         home.put("logoImage", config.getHome().getLogoImage());
@@ -128,6 +132,9 @@ public final class VueState {
         user.put("name", session.getUsername());
         user.put("priv", session.getPrivileges());
         user.put("verified", verified);
+        // Read straight off the privileges, so the banner appears on the next
+        // page load after a restriction and disappears the same way.
+        user.put("restricted", session.isRestricted());
 
         if (!verified) {
             user.put("verifyPath", Verification.PATH);
