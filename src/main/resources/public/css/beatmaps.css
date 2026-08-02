@@ -1,0 +1,721 @@
+/*
+ * ============================================================================
+ * Beatmap listing and beatmap page
+ * ============================================================================
+ *
+ * The layout of the game's own beatmap pages, drawn with the palette this site
+ * already has: the neutral greys, the one pink accent, the three radii. No new
+ * colours are introduced here except the star rating ramp, which is set inline
+ * per difficulty because it is data, not decoration.
+ *
+ * This file is loaded after koneko.css, so the few rules that restate an
+ * earlier selector (.mapset-card, .diff-bar, .mapset-grid) win on order.
+ */
+
+/* Both pages are two column layouts, which needs more room than the 960px a
+   text page is set in. */
+.page-wide {
+    max-width: 1180px;
+}
+
+/* ------------------------------------------------------------- title bar */
+
+.listing-head {
+    display: flex;
+    align-items: center;
+    margin: 28px 0 20px;
+}
+
+.listing-head h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* --------------------------------------------------------- search panel */
+
+.search-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px 20px;
+    margin-bottom: 20px;
+}
+
+.search-field {
+    position: relative;
+    margin-bottom: 22px;
+}
+
+.search-field-input {
+    width: 100%;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    padding: 12px 16px;
+}
+
+.search-field-input::placeholder {
+    color: var(--muted);
+}
+
+.search-field-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/*
+ * A facet is a label and a row of words. The label column is fixed so the
+ * choices of every row start on the same vertical line, which is what makes
+ * the block readable as a table without being one.
+ */
+.facet {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 8px 0;
+}
+
+.facet-label {
+    flex: 0 0 130px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.facet-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+
+/* The options are text, not buttons with boxes: colour and weight carry the
+   state, the way the game's filter rows do it. */
+.facet-option,
+.sort-option {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s ease-out;
+}
+
+.facet-option:hover,
+.sort-option:hover {
+    color: var(--text);
+}
+
+.facet-option.active,
+.sort-option.active {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------- sort bar */
+
+.sort-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 14px 4px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 22px;
+}
+
+.sort-bar-label {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.sort-option.active {
+    border-bottom-color: var(--accent);
+    padding-bottom: 2px;
+}
+
+.sort-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.layout-toggle {
+    width: 30px;
+    height: 28px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.layout-toggle:hover {
+    color: var(--text);
+}
+
+.layout-toggle.active {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ------------------------------------------------------- listing results */
+
+/* Two wide rows per line on a desktop, one on a narrow screen. */
+.mapset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+    gap: 16px;
+}
+
+.mapset-grid-list {
+    grid-template-columns: 1fr;
+}
+
+/*
+ * The card is its own cover: a dimmed, blurred copy of the artwork fills the
+ * row, and the text sits on top of it. That is why every layer below carries
+ * position: relative - the cover is the only absolutely placed one.
+ */
+.mapset-card {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-height: 104px;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    transition: border-color 0.12s ease-out, transform 0.12s ease-out;
+}
+
+.mapset-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.mapset-card-cover {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.28;
+    filter: blur(1px);
+}
+
+/* The gradient keeps the title readable no matter how bright the artwork is. */
+.mapset-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(14, 14, 16, 0.94) 40%, rgba(14, 14, 16, 0.6));
+}
+
+.mapset-card-thumb,
+.mapset-card-body {
+    position: relative;
+    z-index: 1;
+}
+
+.mapset-card-thumb {
+    position: relative;
+    flex: 0 0 104px;
+    background: var(--bg-soft);
+}
+
+.mapset-card-thumb img,
+.mapset-thumb-empty {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.mapset-thumb-empty {
+    background: linear-gradient(135deg, var(--bg-soft), var(--bg-alt));
+}
+
+.mapset-card-video {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.65);
+    color: var(--text);
+    font-size: 0.6rem;
+}
+
+.mapset-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 14px 18px;
+}
+
+.mapset-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mapset-card-artist {
+    color: var(--text);
+    font-size: 0.85rem;
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mapset-card-mapper {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.mapset-card-mapper span {
+    color: var(--accent-soft);
+}
+
+.mapset-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.mapset-card-count {
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.mapset-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+/* ------------------------------------------------------------ status pill */
+
+/*
+ * The status is the one label a player scans for, so it keeps the shape of a
+ * pill everywhere: in the listing, and larger on the beatmap page. Ranked and
+ * approved are the site accent; the rest stay neutral, because a graveyard set
+ * announcing itself in colour would be noise.
+ */
+.status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* On the beatmap page the pill runs the width of the column, the way the
+   status banner does on the game's own page. */
+.status-pill-large {
+    padding: 6px 18px;
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.status-ranked,
+.status-approved {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+}
+
+.status-loved {
+    background: rgba(255, 77, 141, 0.16);
+    border-color: var(--accent-dark);
+    color: var(--accent-soft);
+}
+
+.status-qualified {
+    background: rgba(79, 192, 255, 0.14);
+    border-color: #2f6d8f;
+    color: #7fd0ff;
+}
+
+/* --------------------------------------------------------- difficulty dots */
+
+.diff-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.diff-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.diff-dots-more {
+    color: var(--muted);
+    font-size: 0.7rem;
+    margin-left: 2px;
+}
+
+/* ============================================================ beatmap page */
+
+.beatmap-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-panel);
+    margin-bottom: 18px;
+}
+
+.beatmap-hero-cover {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.35;
+}
+
+.beatmap-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(14, 14, 16, 0.72), rgba(14, 14, 16, 0.95));
+}
+
+.beatmap-hero-inner {
+    position: relative;
+    z-index: 1;
+    padding: 26px 30px 30px;
+}
+
+/*
+ * The difficulty bar: one orb per difficulty, the selected one ringed.
+ *
+ * A mapping pack can carry seventy of them, which as a plain wrapping row
+ * takes over the whole screen before the title is even reached. The bar is
+ * therefore capped at roughly three rows and scrolls past that, so the block
+ * above the title stays a bar rather than becoming a wall.
+ */
+.diff-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 24px;
+    max-height: 132px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.diff-orb-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.diff-orb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+}
+
+.diff-orb-core {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+}
+
+.diff-orb-button:hover .diff-orb-core {
+    transform: scale(1.15);
+}
+
+.diff-orb-button.active .diff-orb {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) inset;
+}
+
+/* The title block on the left, the numbers on the right. */
+.beatmap-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 350px;
+    gap: 36px;
+    align-items: start;
+}
+
+.beatmap-hero-tags {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.star-pill {
+    display: inline-block;
+    padding: 2px 11px;
+    border-radius: 999px;
+    color: #14090e;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Never calculated. Grey and worded, so it cannot be read as "easy". */
+.star-pill-unrated {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--muted);
+}
+
+.beatmap-hero-version {
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.beatmap-hero-counts {
+    display: flex;
+    gap: 14px;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.beatmap-title {
+    margin: 14px 0 0;
+    font-size: 2rem;
+    line-height: 1.15;
+}
+
+.beatmap-artist {
+    margin: 4px 0 22px;
+    color: var(--muted);
+    font-size: 1.05rem;
+}
+
+.beatmap-mapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.beatmap-mapper-text {
+    line-height: 1.45;
+}
+
+.beatmap-mapper-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.beatmap-mapper-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+}
+
+/* ------------------------------------------------------ the numbers column */
+
+.beatmap-hero-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 22px;
+    background: rgba(0, 0, 0, 0.42);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.beatmap-counters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding-bottom: 4px;
+    text-align: center;
+}
+
+.beatmap-counters div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.75rem;
+}
+
+.beatmap-counters b {
+    font-size: 0.95rem;
+}
+
+/* The settings bars. Every one of them runs 0-10, which is why a single
+   percentage scale works for all of them. */
+.diff-attrs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.diff-attr {
+    display: grid;
+    grid-template-columns: 96px 1fr 34px;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+}
+
+.diff-attr-label {
+    color: var(--muted);
+}
+
+.diff-attr-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    overflow: hidden;
+}
+
+.diff-attr-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+
+.diff-attr-value {
+    text-align: right;
+}
+
+.pass-rate {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pass-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    overflow: hidden;
+}
+
+.pass-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-soft);
+}
+
+/* ------------------------------------------------------ the two fact cards */
+
+.beatmap-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.beatmap-columns .card {
+    margin: 0;
+    padding: 22px 26px;
+    background: var(--bg-panel);
+}
+
+.diff-facts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 0;
+}
+
+.diff-facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+
+.diff-facts > div:last-child {
+    border-bottom: none;
+}
+
+.diff-facts dt {
+    color: var(--muted);
+}
+
+.diff-facts dd {
+    margin: 0;
+}
+
+.diff-fact-wide dd {
+    overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- narrow view */
+
+@media (max-width: 860px) {
+    .beatmap-hero-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .beatmap-title {
+        font-size: 1.5rem;
+    }
+
+    .facet {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .facet-label {
+        flex: none;
+    }
+
+    .mapset-grid {
+        grid-template-columns: 1fr;
+    }
+}

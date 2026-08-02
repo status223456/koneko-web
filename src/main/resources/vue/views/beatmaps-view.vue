@@ -1,57 +1,74 @@
 <template id="beatmaps-view">
-    <div class="page">
+    <div class="page page-wide">
         <site-nav></site-nav>
 
         <koneko-slot name="beatmaps.top"></koneko-slot>
         <koneko-slot name="page.top"></koneko-slot>
 
-        <section class="card">
-            <h2>Beatmaps</h2>
+        <!-- The listing header: one title bar, one search panel, one sort bar.
+             The same three pieces the game's own beatmap listing has. -->
+        <header class="listing-head">
+            <h1>Beatmap listing</h1>
+        </header>
 
-            <div class="filters">
-                <input class="filter-input"
+        <section class="search-panel">
+            <div class="search-field">
+                <input class="search-field-input"
                        type="search"
                        v-model="query"
                        @input="debounced"
-                       placeholder="Artist, title, mapper or difficulty">
-
-                <select class="filter-select" v-model="status" @change="reload">
-                    <option value="">Any status</option>
-                    <option value="1">Ranked</option>
-                    <option value="2">Approved</option>
-                    <option value="3">Qualified</option>
-                    <option value="4">Loved</option>
-                    <option value="0">Pending</option>
-                    <option value="-1">Work in progress</option>
-                    <option value="-2">Graveyard</option>
-                </select>
-
-                <select class="filter-select" v-model="mode" @change="reload">
-                    <option value="">Any mode</option>
-                    <option value="0">osu!</option>
-                    <option value="1">taiko</option>
-                    <option value="2">catch</option>
-                    <option value="3">mania</option>
-                </select>
-
-                <select class="filter-select" v-model="server" @change="reload">
-                    <option value="">Every set</option>
-                    <option value="local">Submitted here</option>
-                    <option value="osu">Mirrored from osu!</option>
-                </select>
-
-                <select class="filter-select" v-model="sort" @change="reload">
-                    <option value="updated">Newest</option>
-                    <option value="plays">Most played</option>
-                    <option value="difficulty">Hardest</option>
-                    <option value="title">Title</option>
-                </select>
+                       placeholder="type in keywords...">
             </div>
 
-            <p class="muted small" v-if="!loading">
-                {{ fmtNumber(count) }} sets found
-            </p>
+            <!-- Every row is one facet: a label on the left, the choices as
+                 plain text on the right. Nothing here is a dropdown, so the
+                 whole filter state is readable at a glance. -->
+            <div class="facet">
+                <span class="facet-label">Mode</span>
+                <div class="facet-options">
+                    <button class="facet-option" v-for="option in modeOptions" :key="'m' + option.value"
+                        :class="{ active: mode === option.value }"
+                        @click="pick('mode', option.value)">{{ option.name }}</button>
+                </div>
+            </div>
+
+            <div class="facet">
+                <span class="facet-label">Categories</span>
+                <div class="facet-options">
+                    <button class="facet-option" v-for="option in statusOptions" :key="'s' + option.value"
+                        :class="{ active: status === option.value }"
+                        @click="pick('status', option.value)">{{ option.name }}</button>
+                </div>
+            </div>
+
+            <div class="facet">
+                <span class="facet-label">Source</span>
+                <div class="facet-options">
+                    <button class="facet-option" v-for="option in serverOptions" :key="'v' + option.value"
+                        :class="{ active: server === option.value }"
+                        @click="pick('server', option.value)">{{ option.name }}</button>
+                </div>
+            </div>
         </section>
+
+        <div class="sort-bar">
+            <span class="sort-bar-label">Sort by</span>
+
+            <button class="sort-option" v-for="option in sortOptions" :key="option.value"
+                :class="{ active: sort === option.value }"
+                @click="pick('sort', option.value)">{{ option.name }}</button>
+
+            <div class="sort-bar-right">
+                <span class="muted small" v-if="!loading">{{ fmtNumber(count) }} sets</span>
+
+                <!-- Two densities of the same list, kept in the browser so the
+                     choice survives a reload. -->
+                <button class="layout-toggle" :class="{ active: layout === 'grid' }"
+                    title="Cards" @click="setLayout('grid')">&#9638;</button>
+                <button class="layout-toggle" :class="{ active: layout === 'list' }"
+                    title="Rows" @click="setLayout('list')">&#9776;</button>
+            </div>
+        </div>
 
         <p class="muted" v-if="loading">Searching the beatmaps...</p>
 
@@ -62,7 +79,7 @@
         </section>
 
         <template v-else>
-            <div class="mapset-grid">
+            <div class="mapset-grid" :class="'mapset-grid-' + layout">
                 <mapset-card v-for="set in sets" :key="set.set_id" :set="set"></mapset-card>
             </div>
 
@@ -90,11 +107,42 @@
             mode: "",
             server: "",
             sort: "updated",
+            layout: "grid",
             offset: 0,
             limit: 24,
             count: 0,
             sets: [],
-            timer: null
+            timer: null,
+            // The facets, written once here instead of as markup four times
+            // over. The empty value always means "no filter".
+            modeOptions: [
+                { value: "", name: "Any" },
+                { value: "0", name: "osu!" },
+                { value: "1", name: "osu!taiko" },
+                { value: "2", name: "osu!catch" },
+                { value: "3", name: "osu!mania" }
+            ],
+            statusOptions: [
+                { value: "", name: "Any" },
+                { value: "1", name: "Ranked" },
+                { value: "2", name: "Approved" },
+                { value: "3", name: "Qualified" },
+                { value: "4", name: "Loved" },
+                { value: "0", name: "Pending" },
+                { value: "-1", name: "Work in progress" },
+                { value: "-2", name: "Graveyard" }
+            ],
+            serverOptions: [
+                { value: "", name: "Every set" },
+                { value: "local", name: "Submitted here" },
+                { value: "osu", name: "Mirrored from osu!" }
+            ],
+            sortOptions: [
+                { value: "title", name: "Title" },
+                { value: "updated", name: "Date added" },
+                { value: "difficulty", name: "Difficulty" },
+                { value: "plays", name: "Plays" }
+            ]
         }),
         computed: {
             hasPrev() {
@@ -111,6 +159,24 @@
             }
         },
         methods: {
+            // One handler for every facet, since picking any of them means the
+            // same thing: set the field, go back to the first page, search.
+            pick(field, value) {
+                if (this[field] === value) return;
+
+                this[field] = value;
+                this.reload();
+            },
+            setLayout(layout) {
+                this.layout = layout;
+
+                try {
+                    window.localStorage.setItem("beatmaps:layout", layout);
+                } catch (e) {
+                    // Private windows refuse storage; the choice then lasts
+                    // for this page only, which is no worse than nothing.
+                }
+            },
             search() {
                 const params = new URLSearchParams();
 
@@ -210,6 +276,14 @@
             this.server = params.get("server") || "";
             this.sort = params.get("sort") || "updated";
             this.offset = Math.max(0, parseInt(params.get("offset") || "0", 10) || 0);
+
+            try {
+                this.layout = window.localStorage.getItem("beatmaps:layout") === "list"
+                    ? "list"
+                    : "grid";
+            } catch (e) {
+                this.layout = "grid";
+            }
 
             this.load();
         }

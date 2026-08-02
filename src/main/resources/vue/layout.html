@@ -18,6 +18,11 @@
          serving a stale stylesheet out of their disk cache. -->
     <link rel="stylesheet" href="/css/koneko.css?v=avatar-crop-2">
 
+    <!-- The beatmap listing and the beatmap page bring their own layout. It is
+         loaded after koneko.css on purpose: a handful of its rules restate an
+         earlier selector and have to win on order. -->
+    <link rel="stylesheet" href="/css/beatmaps.css?v=beatmaps-layout-1">
+
     <!-- Stylesheets and head html contributed by .jar plugins. -->
 @pluginHead
 </head>
