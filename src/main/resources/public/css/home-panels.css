@@ -627,3 +627,116 @@
         margin-top: -36px;
     }
 }
+
+/* The numbers column of a profile. The level bar heads it, the statistics
+   panel follows, so the bar reads as a summary of the list under it. */
+.profile-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.profile-right .level-row {
+    max-width: none;
+}
+
+/* The numbers column of a profile. The level bar heads it, the statistics
+   panel follows, so the bar reads as a summary of the list under it. */
+   .profile-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.profile-right .level-row {
+    max-width: none;
+}
+
+/* Where the player drifted through the world ranking, under the positions.
+   It is drawn without a frame or a fill of its own: the block already sits
+   inside the profile card, and a bordered box would read as a second panel. */
+.profile-rank-graph {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.profile-graph-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+}
+
+.rank-plot {
+    position: relative;
+    height: 110px;
+}
+
+.rank-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+.rank-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+/* The positions naming the top and the bottom of the span, dim enough to
+   stay out of the way of the line. */
+.rank-peak,
+.rank-floor {
+    position: absolute;
+    left: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.rank-peak { top: 0; }
+.rank-floor { bottom: 0; }
+
+.rank-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* The dots only exist to carry the tooltip, so they stay nearly invisible
+   until the pointer finds one. */
+.rank-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin: 0 0 -4px -4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity .12s ease;
+    pointer-events: auto;
+}
+
+.rank-dot:hover {
+    opacity: 1;
+}
+
+.rank-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.profile-rank-graph .skeleton-graph {
+    height: 110px;
+    border-radius: 8px;
+}

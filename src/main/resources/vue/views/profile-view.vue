@@ -93,11 +93,13 @@
 
                         </div>
 
-                        <div class="grade-counts">
-                            <div class="grade-count" v-for="grade in grades" :key="grade.cls">
-                                <span class="grade-mark" :class="'grade-' + grade.cls">{{ grade.mark }}</span>
-                                <span class="grade-value">{{ fmtNumber(grade.value) }}</span>
-                            </div>
+                        <!-- How the player drifted through the world ranking.
+                             It sits right under the positions it belongs to. -->
+                        <div class="profile-rank-graph">
+                            <span class="profile-graph-title">World rank</span>
+
+                            <div class="skeleton skeleton-graph" v-if="pending.rankHistory"></div>
+                            <rank-graph v-else :days="rankHistory"></rank-graph>
                         </div>
 
                         <div class="profile-quick">
@@ -117,30 +119,41 @@
                             </div>
                         </div>
 
+                        <div class="grade-counts">
+                            <div class="grade-count" v-for="grade in grades" :key="grade.cls">
+                                <span class="grade-mark" :class="'grade-' + grade.cls">{{ grade.mark }}</span>
+                                <span class="grade-value">{{ fmtNumber(grade.value) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-right">
+                        <!-- The level bar heads the numbers column: it is a
+                             summary of the same statistics listed below it. -->
                         <div class="level-row">
                             <span class="level-badge">{{ stats.level || 1 }}</span>
                             <span class="level-bar">
                                 <span class="level-fill" :style="{ width: levelProgress + '%' }"></span>
                             </span>
                         </div>
-                    </div>
 
-                    <dl class="profile-facts">
-                        <div><dt>Joined:</dt><dd>{{ fmtRelative(info.creation_time) }}</dd></div>
-                        <div><dt>Last Activity:</dt><dd>{{ fmtRelative(info.latest_activity) }}</dd></div>
-                        <div><dt>PP:</dt><dd>{{ fmtNumber(stats.pp) }}</dd></div>
-                        <div><dt>Playcount:</dt><dd>{{ fmtNumber(stats.plays) }}</dd></div>
-                        <div><dt>Replay views:</dt><dd>{{ fmtNumber(stats.replay_views) }}</dd></div>
-                        <div><dt>Total Score:</dt><dd>{{ fmtNumber(stats.tscore) }}</dd></div>
-                        <div><dt>Ranked Score:</dt><dd>{{ fmtNumber(stats.rscore) }}</dd></div>
-                        <div><dt>Max Combo:</dt><dd>{{ fmtNumber(stats.max_combo) }}</dd></div>
-                        <div><dt>Total Hits:</dt><dd>{{ fmtNumber(stats.total_hits) }}</dd></div>
-                        <div><dt>Accuracy:</dt><dd>{{ fmtAccuracy(stats.acc) }}</dd></div>
-                        <div class="played-for">
-                            <dt>Played for:</dt>
-                            <dd>{{ fmtPlaytime(stats.playtime) }}</dd>
-                        </div>
-                    </dl>
+                        <dl class="profile-facts">
+                            <div><dt>Joined:</dt><dd>{{ fmtRelative(info.creation_time) }}</dd></div>
+                            <div><dt>Last Activity:</dt><dd>{{ fmtRelative(info.latest_activity) }}</dd></div>
+                            <div><dt>PP:</dt><dd>{{ fmtNumber(stats.pp) }}</dd></div>
+                            <div><dt>Playcount:</dt><dd>{{ fmtNumber(stats.plays) }}</dd></div>
+                            <div><dt>Replay views:</dt><dd>{{ fmtNumber(stats.replay_views) }}</dd></div>
+                            <div><dt>Total Score:</dt><dd>{{ fmtNumber(stats.tscore) }}</dd></div>
+                            <div><dt>Ranked Score:</dt><dd>{{ fmtNumber(stats.rscore) }}</dd></div>
+                            <div><dt>Max Combo:</dt><dd>{{ fmtNumber(stats.max_combo) }}</dd></div>
+                            <div><dt>Total Hits:</dt><dd>{{ fmtNumber(stats.total_hits) }}</dd></div>
+                            <div><dt>Accuracy:</dt><dd>{{ fmtAccuracy(stats.acc) }}</dd></div>
+                            <div class="played-for">
+                                <dt>Played for:</dt>
+                                <dd>{{ fmtPlaytime(stats.playtime) }}</dd>
+                            </div>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </section>
@@ -301,6 +314,7 @@ app.component("profile-view", {
             recent: true,
             first: true,
             playcounts: true,
+            rankHistory: true,
             mostPlayed: true,
             medals: true,
             beatmapsets: true
@@ -315,6 +329,8 @@ app.component("profile-view", {
         // playcount graph looks back.
         pageSize: 10,
         playcountMonths: 12,
+        // How far back the world rank graph on the player card looks.
+        rankDays: 90,
         // 0-3 is the plain mode, the variant shifts it the way the
         // server numbers them: +4 for relax, 8 for autopilot.
         base: 0,
@@ -323,6 +339,7 @@ app.component("profile-view", {
         recent: [],
         firstPlaces: [],
         playcounts: [],
+        rankHistory: [],
         mostPlayed: [],
         beatmapsets: [],
         achievements: [],
@@ -507,6 +524,7 @@ app.component("profile-view", {
             this.firstPlaces = (body.firstPlaces && body.firstPlaces.results) || [];
             this.beatmapsets = (body.beatmapsets && body.beatmapsets.results) || [];
             this.playcounts = (body.playcounts && body.playcounts.months) || [];
+            this.rankHistory = (body.rankHistory && body.rankHistory.days) || [];
 
             this.achievements = (body.achievements && body.achievements.results) || [];
             this.medalTotal = (body.achievements && body.achievements.total)
@@ -631,6 +649,7 @@ app.component("profile-view", {
                 this.pending.recent = true;
                 this.pending.first = true;
                 this.pending.playcounts = true;
+                this.pending.rankHistory = true;
                 this.pending.mostPlayed = true;
                 this.pending.medals = true;
                 this.pending.beatmapsets = true;
@@ -663,6 +682,12 @@ app.component("profile-view", {
                 answer => {
                     this.firstPlaces = (answer && answer.results) || [];
                     this.counts.first = (answer && answer.count) || this.firstPlaces.length;
+                });
+
+            this.loadSection(run, "rankHistory", "rankHistory", "get_player_rank_history",
+                Object.assign({}, who, { mode: this.mode, days: this.rankDays }),
+                answer => {
+                    this.rankHistory = (answer && answer.days) || [];
                 });
 
             this.loadSection(run, "playcounts", "playcounts", "get_player_playcounts",
