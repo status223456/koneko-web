@@ -44,7 +44,17 @@
                 </div>
 
                 <div class="profile-top" v-else>
-                    <img class="profile-avatar" :src="avatarUrl" :alt="info.name">
+                    <!-- Avatar and badge share one column, so the badge lines up
+                         with the picture's edges instead of floating beside it. -->
+                    <div class="profile-avatar-col">
+                        <img class="profile-avatar" :src="avatarUrl" :alt="info.name">
+
+                        <span class="user-badge profile-badge" v-if="badge" :title="badge.name">
+                            <img class="user-badge-icon" :src="badge.icon" alt=""
+                                loading="lazy" referrerpolicy="no-referrer">
+                            <span class="user-badge-name">{{ badge.name }}</span>
+                        </span>
+                    </div>
 
                     <div class="profile-identity">
                         <h1 class="profile-name">{{ info.name }}</h1>
@@ -69,6 +79,7 @@
                                 <span class="profile-rank-label">Followers</span>
                                 <span class="profile-rank-value">{{ fmtNumber(info.followers || 0) }}</span>
                             </div>
+
                         </div>
 
                         <div class="grade-counts">
@@ -317,6 +328,20 @@
             },
             info() {
                 return (this.player && this.player.info) || {};
+            },
+            /**
+             * The custom badge, or nothing. Both halves are required, and the
+             * picture has to be one this server stores: badge images are uploaded
+             * to /api/v1/me/badge, never linked, so any other value is ignored
+             * instead of being handed to an <img> as-is.
+             */
+            badge() {
+                const name = (this.info.custom_badge_name || "").trim();
+                const icon = (this.info.custom_badge_icon || "").trim();
+
+                if (!name || !/^\/api\/v1\/badge\/[0-9]{1,10}\.png$/.test(icon)) return null;
+
+                return { name: name, icon: icon };
             },
             stats() {
                 const stats = this.player && this.player.stats;

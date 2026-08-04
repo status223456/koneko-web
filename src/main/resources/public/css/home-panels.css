@@ -285,3 +285,128 @@
     padding: 12px;
     overflow-x: auto;
 }
+
+/* Custom badge: a supporter perk, shown next to the ranks on a profile and
+   previewed on the settings page. Small on purpose - it sits in a row of
+   numbers and must not outweigh them. */
+/* A badge is a small plate, not a pill: a rectangular picture on the left and
+   the name next to it, the way the game shows them. */
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 260px;
+    padding: 5px 12px 5px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-soft);
+    line-height: 1;
+}
+
+.user-badge-icon {
+    /* Landscape on purpose: the picture is stored as a 2:1 rectangle, so these
+       two numbers are its real proportions and nothing is squashed. */
+    width: 48px;
+    height: 24px;
+    border-radius: 3px;
+    object-fit: cover;
+    flex: 0 0 auto;
+    background: var(--bg-panel);
+}
+
+.user-badge-name {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The avatar and the badge form one column, so the badge can borrow the
+   picture's width and line up with both of its side edges. */
+.profile-avatar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+}
+
+.profile-badge {
+    /* Stretched to the column, which is exactly as wide as the avatar. */
+    display: flex;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    justify-content: flex-start;
+    padding: 5px 8px 5px 6px;
+}
+
+.profile-badge .user-badge-name {
+    min-width: 0;
+}
+
+.badge-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 2px;
+}
+
+.settings-split {
+    margin: 22px 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+}
+
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.field-hint {
+    display: block;
+    margin-top: 4px;
+}
+
+/* A panel the account cannot use yet: the real controls stay in place and get
+   blurred, with a single line of text sitting on top of them. The veil is a
+   sibling of the blurred body, because a blur on the parent would take the
+   message down with it. */
+.locked {
+    position: relative;
+}
+
+.locked-body {
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.locked.is-locked .locked-body {
+    filter: blur(4px);
+    opacity: 0.5;
+    /* Nothing under the blur is meant to be reachable, not even by tabbing. */
+    pointer-events: none;
+    user-select: none;
+}
+
+.locked-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    text-align: center;
+}
+
+.locked-veil span {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+}

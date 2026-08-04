@@ -80,18 +80,6 @@
                     </label>
 
                     <label class="field">
-                        <span class="field-label">Badge name</span>
-                        <input class="filter-input" type="text" v-model="profile.custom_badge_name"
-                            placeholder="Shown next to your name">
-                    </label>
-
-                    <label class="field">
-                        <span class="field-label">Badge icon</span>
-                        <input class="filter-input" type="text" v-model="profile.custom_badge_icon"
-                            placeholder="An icon name, e.g. fas fa-star">
-                    </label>
-
-                    <label class="field">
                         <span class="field-label">Userpage</span>
                         <textarea class="filter-input" rows="8" v-model="profile.userpage_content"
                             placeholder="Tell people about yourself"></textarea>
@@ -107,8 +95,15 @@
                     aria-labelledby="avatar-editor-title">
                     <div class="avatar-editor-head">
                         <div>
-                            <h3 id="avatar-editor-title">Crop profile picture</h3>
-                            <p class="muted small">Drag a region, or move and resize it by its corners.</p>
+                            <h3 id="avatar-editor-title">
+                                {{ avatarEditor.target === "badge" ? "Crop badge picture" : "Crop profile picture" }}
+                            </h3>
+                            <p class="muted small">
+                                Drag a region, or move and resize it by its corners.
+                                <template v-if="avatarEditor.target === 'badge'">
+                                    The badge keeps the shape you pick and is shown 16px tall.
+                                </template>
+                            </p>
                         </div>
                         <button class="avatar-editor-close" type="button"
                             @click="closeAvatarEditor" aria-label="Close">&times;</button>
@@ -146,13 +141,93 @@
                             @click="resetSelection" :disabled="avatarEditor.saving">Reset</button>
                         <button class="button button-ghost" type="button"
                             @click="closeAvatarEditor" :disabled="avatarEditor.saving">Cancel</button>
-                        <button class="button" type="button" @click="saveAvatar"
+                        <button class="button" type="button" @click="saveCrop"
                             :disabled="avatarEditor.saving || avatarEditor.crop.w < 16">
                             {{ avatarEditor.saving ? "Saving…" : "Save picture" }}
                         </button>
                     </div>
                 </section>
             </div>
+
+            <section class="card">
+                <h3>Supporter</h3>
+
+                <!--
+                    Locked accounts get the same panel behind a blur with one line
+                    on top, instead of a status paragraph plus a wall of disabled
+                    fields: there is nothing to read here until it is unlocked.
+                    The inputs stay disabled underneath, so the blur is decoration
+                    and not the thing keeping them out.
+                -->
+                <div class="locked" :class="{ 'is-locked': !donor }">
+                    <div class="locked-veil" v-if="!donor">
+                        <span>You will need supporter for this</span>
+                    </div>
+
+                    <div class="locked-body">
+                        <form class="stack" @submit.prevent="changeUsername">
+                            <label class="field">
+                                <span class="field-label">Username</span>
+                                <input class="filter-input" type="text" v-model="username.name"
+                                    :disabled="!donor" maxlength="15" :placeholder="info.name">
+                                <span class="field-hint muted small">
+                                    2-15 characters. Signs you out of the game client.
+                                </span>
+                            </label>
+
+                            <label class="field">
+                                <span class="field-label">Current password</span>
+                                <input class="filter-input" type="password" v-model="username.current_password"
+                                    autocomplete="current-password" :disabled="!donor">
+                            </label>
+
+                            <button class="button" type="submit"
+                                :disabled="busy || !donor || !username.name.trim() || !username.current_password">
+                                Change username
+                            </button>
+                        </form>
+
+                        <hr class="settings-split">
+
+                        <form class="stack" @submit.prevent="saveBadge">
+                            <input ref="badgeInput" class="avatar-input" type="file" hidden
+                                accept="image/png,image/jpeg" @change="openBadgeEditor">
+
+                            <label class="field">
+                                <span class="field-label">Badge</span>
+                                <input class="filter-input" type="text" v-model="badge.custom_badge_name"
+                                    :disabled="!donor" maxlength="16" placeholder="Badge name">
+                                <span class="field-hint muted small">
+                                    Name and picture, shown next to your rank. PNG or JPEG, up to 2 MB.
+                                </span>
+                            </label>
+
+                            <div class="settings-actions">
+                                <span class="user-badge" v-if="badgeIcon" :title="badgeName">
+                                    <img class="user-badge-icon" :src="badgeIconUrl" alt="">
+                                    <span class="user-badge-name">{{ badgeName || "Badge" }}</span>
+                                </span>
+                                <button class="button button-ghost" type="button"
+                                    :disabled="busy || badgeUploading || !donor" @click="chooseBadgeIcon">
+                                    {{ badgeUploading ? "Uploading…" : (badgeIcon ? "Replace picture" : "Upload picture") }}
+                                </button>
+                            </div>
+
+                            <div class="settings-actions">
+                                <button class="button" type="submit"
+                                    :disabled="busy || badgeUploading || !donor || !badgeIcon">
+                                    Save badge
+                                </button>
+                                <button class="button button-ghost" type="button"
+                                    :disabled="busy || badgeUploading || !donor || !hasBadge"
+                                    @click="clearBadge">
+                                    Remove badge
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
 
             <section class="card">
                 <h3>Email</h3>
@@ -267,10 +342,16 @@
             profile: {
                 userpage_content: "",
                 preferred_mode: 0,
-                play_style: 0,
-                custom_badge_name: "",
-                custom_badge_icon: ""
+                play_style: 0
             },
+            // Supporter perks: both live here rather than in game.
+            username: { name: "", current_password: "" },
+            badge: { custom_badge_name: "" },
+            // The picture is not typed in: it is uploaded, and this is the path
+            // the server gave back for it.
+            badgeIcon: "",
+            badgeVersion: 0,
+            badgeUploading: false,
             email: { email: "", current_password: "" },
             password: { new_password: "", current_password: "" },
             passwordRepeat: "",
@@ -289,7 +370,9 @@
                 originY: 0,
                 startCrop: null,
                 saving: false,
-                error: ""
+                error: "",
+                // Which picture the dialog is cropping: "avatar" or "badge".
+                target: "avatar"
             }
         }),
         computed: {
@@ -297,11 +380,41 @@
                 const suffix = this.avatarVersion ? "?v=" + this.avatarVersion : "";
                 return "https://a." + this.$koneko.domain + "/" + this.info.id + suffix;
             },
+            /**
+             * Whether the supporter perks are open. The server answers this,
+             * because donor_end is only one of the two ways to have it: the
+             * permanent supporter bits count as well, and a page that only
+             * looked at the timestamp told those accounts they had nothing.
+             */
             donor() {
-                return this.info.donor_end && this.asDate(this.info.donor_end) > new Date();
+                // Any of the three is enough, and none of them is required: an
+                // older API answer has no supporter flag at all, and an account
+                // with the permanent bits has no donor_end. Reading only one of
+                // them is exactly what used to call supporters non-supporters.
+                if (this.info.supporter === true) return true;
+
+                // SUPPORTER (1 << 4) and PREMIUM (1 << 5) of the privilege mask.
+                if ((Number(this.info.priv || 0) & 48) !== 0) return true;
+
+                return !!(this.info.donor_end && this.asDate(this.info.donor_end) > new Date());
             },
             silenced() {
                 return this.info.silence_end && this.asDate(this.info.silence_end) > new Date();
+            },
+            hasBadge() {
+                return !!(this.info.custom_badge_name || this.info.custom_badge_icon);
+            },
+            badgeName() {
+                return (this.badge.custom_badge_name || "").trim();
+            },
+            // The path never changes when a picture is replaced, so the preview
+            // gets a version of its own to stop the browser showing the old one.
+            badgeIconUrl() {
+                if (!this.badgeIcon) return "";
+
+                return this.badgeVersion
+                    ? this.badgeIcon + "?v=" + this.badgeVersion
+                    : this.badgeIcon;
             },
             boxStyle() {
                 const crop = this.avatarEditor.crop;
@@ -362,6 +475,17 @@
                 this.$refs.avatarInput.click();
             },
             openAvatarEditor(event) {
+                this.openEditor(event, "avatar");
+            },
+            openBadgeEditor(event) {
+                this.openEditor(event, "badge");
+            },
+            /**
+             * One cropper for both pictures. The target only decides how small a
+             * source image may be, what the dialog says, and where the result is
+             * posted, so a badge is chosen exactly the way an avatar is.
+             */
+            openEditor(event, target) {
                 const file = event.target.files && event.target.files[0];
                 event.target.value = "";
                 if (!file) return;
@@ -376,17 +500,23 @@
                     return;
                 }
 
+                // A badge is shown at 16px, so it may come from a much smaller
+                // file than an avatar.
+                const minSide = target === "badge" ? 16 : 64;
+
                 const objectUrl = URL.createObjectURL(file);
                 const image = new Image();
                 image.onload = () => {
-                    if (image.naturalWidth < 64 || image.naturalHeight < 64
+                    if (image.naturalWidth < minSide || image.naturalHeight < minSide
                         || image.naturalWidth > 8192 || image.naturalHeight > 8192
                         || image.naturalWidth * image.naturalHeight > 40000000) {
                         URL.revokeObjectURL(objectUrl);
-                        this.error = "Use an image between 64px and 8192px (40 megapixels max).";
+                        this.error = "Use an image between " + minSide
+                            + "px and 8192px (40 megapixels max).";
                         return;
                     }
 
+                    this.avatarEditor.target = target;
                     this.avatarEditor.image = image;
                     this.avatarEditor.objectUrl = objectUrl;
                     this.avatarEditor.crop = { x: 0, y: 0, w: 0, h: 0 };
@@ -531,6 +661,12 @@
                     h: Math.max(1, Math.round(editor.crop.h * scaleY))
                 };
             },
+            // The dialog is shared, so its button asks the target where to post.
+            saveCrop() {
+                return this.avatarEditor.target === "badge"
+                    ? this.saveBadgeCrop()
+                    : this.saveAvatar();
+            },
             async saveAvatar() {
                 const source = this.sourceRect();
                 if (this.avatarEditor.saving || !source) return;
@@ -592,6 +728,7 @@
                 this.avatarEditor.mode = "";
                 this.avatarEditor.pointerId = null;
                 this.avatarEditor.crop = { x: 0, y: 0, w: 0, h: 0 };
+                this.avatarEditor.target = "avatar";
                 if (this.avatarEditor.objectUrl) {
                     URL.revokeObjectURL(this.avatarEditor.objectUrl);
                     this.avatarEditor.objectUrl = "";
@@ -607,8 +744,8 @@
                     if (this.info) {
                         this.profile.userpage_content = this.info.userpage_content || "";
                         this.profile.preferred_mode = this.info.preferred_mode || 0;
-                        this.profile.custom_badge_name = this.info.custom_badge_name || "";
-                        this.profile.custom_badge_icon = this.info.custom_badge_icon || "";
+                        this.badge.custom_badge_name = this.info.custom_badge_name || "";
+                        this.badgeIcon = this.info.custom_badge_icon || "";
                         this.styleBits = this.playStyles
                             .filter(style => (this.info.play_style & style.bit) !== 0)
                             .map(style => style.bit);
@@ -642,7 +779,9 @@
                 this.error = "";
                 this.notice = "";
 
-                if (action === "update") {
+                // Only the profile form owns the play style checkboxes; the badge
+                // form posts to the same action but must not touch them.
+                if (action === "update" && body === this.profile) {
                     body.play_style = this.styleBits.reduce((sum, bit) => sum + bit, 0);
                 }
 
@@ -658,6 +797,131 @@
                     return false;
                 } finally {
                     this.busy = false;
+                }
+            },
+            async changeUsername() {
+                const name = this.username.name.trim();
+
+                if (!name || !this.username.current_password) return;
+
+                const ok = await this.save("name", {
+                    name: name,
+                    current_password: this.username.current_password
+                }, "Username changed.");
+
+                this.username.current_password = "";
+
+                // The name is on every card of this page and in the navbar, so the
+                // page is reloaded rather than patched in a dozen places.
+                if (ok) window.location.reload();
+            },
+            chooseBadgeIcon() {
+                this.$refs.badgeInput.click();
+            },
+            /**
+             * Posts the selected region as the badge picture. The server decodes
+             * and re-encodes it again, so this is only about not sending a 12
+             * megapixel photo to have it shown at 16 pixels.
+             */
+            async saveBadgeCrop() {
+                const source = this.sourceRect();
+
+                if (this.avatarEditor.saving || !source) return;
+
+                this.avatarEditor.saving = true;
+                this.avatarEditor.error = "";
+                this.badgeUploading = true;
+
+                try {
+                    // A badge is a wide plate, so the selection is centre-cropped
+                    // to 2:1 - the very shape the profile draws it in, which keeps
+                    // the picture from being letterboxed or squashed there.
+                    const cropW = Math.min(source.w, source.h * 2);
+                    const cropH = Math.max(1, Math.round(cropW / 2));
+                    const factor = cropW > 192 ? 192 / cropW : 1;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.max(1, Math.round(cropW * factor));
+                    canvas.height = Math.max(1, Math.round(cropH * factor));
+
+                    const context = canvas.getContext("2d");
+                    context.imageSmoothingEnabled = true;
+                    context.imageSmoothingQuality = "high";
+                    context.drawImage(this.avatarEditor.image,
+                        source.x + (source.w - cropW) / 2, source.y + (source.h - cropH) / 2,
+                        cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(value => value ? resolve(value)
+                            : reject(new Error("Could not prepare the image.")), "image/png");
+                    });
+
+                    const response = await fetch("/account/badge-icon", {
+                        method: "POST",
+                        headers: { "Accept": "application/json", "Content-Type": "image/png" },
+                        credentials: "same-origin",
+                        body: blob
+                    });
+
+                    let answer = null;
+                    try { answer = await response.json(); } catch (ignored) {}
+
+                    if (!response.ok) {
+                        throw new Error((answer && (answer.status || answer.error_description))
+                            || "The picture could not be uploaded.");
+                    }
+
+                    this.badgeIcon = (answer && answer.custom_badge_icon) || this.badgeIcon;
+                    this.badgeVersion = Date.now();
+                    this.info.custom_badge_icon = this.badgeIcon;
+
+                    this.notice = this.badgeName
+                        ? "Picture uploaded."
+                        : "Picture uploaded. Give the badge a name and save it.";
+                    this.error = "";
+                    this.closeAvatarEditor();
+                } catch (e) {
+                    this.avatarEditor.error = e.message || "The picture could not be uploaded.";
+                } finally {
+                    this.avatarEditor.saving = false;
+                    this.badgeUploading = false;
+                }
+            },
+            async saveBadge() {
+                const name = this.badgeName;
+
+                if (!this.badgeIcon) {
+                    this.error = "Upload a picture for the badge first.";
+
+                    return;
+                }
+
+                if (!name) {
+                    this.error = "A badge needs a name.";
+
+                    return;
+                }
+
+                const ok = await this.save("update", {
+                    custom_badge_name: name,
+                    custom_badge_icon: this.badgeIcon
+                }, "Badge saved.");
+
+                if (ok) {
+                    this.info.custom_badge_name = name;
+                    this.info.custom_badge_icon = this.badgeIcon;
+                }
+            },
+            async clearBadge() {
+                const ok = await this.save("update", {
+                    custom_badge_name: null,
+                    custom_badge_icon: null
+                }, "Badge removed.");
+
+                if (ok) {
+                    this.badge.custom_badge_name = "";
+                    this.badgeIcon = "";
+                    this.info.custom_badge_name = null;
+                    this.info.custom_badge_icon = null;
                 }
             },
             async changePassword() {

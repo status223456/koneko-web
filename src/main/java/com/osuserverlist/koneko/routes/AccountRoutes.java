@@ -36,9 +36,13 @@ public final class AccountRoutes {
     /** Cropped 512px PNGs are normally below 1 MB; leave room for noisy images. */
     private static final int MAX_AVATAR_BYTES = 4 * 1024 * 1024;
 
+    /** A badge picture is shown at 16px, so it never needs to be a big file. */
+    private static final int MAX_BADGE_BYTES = 2 * 1024 * 1024;
+
     /** What the browser may post, and where it goes on the API. */
     private static final Map<String, String> ACTIONS = Map.of(
             "update", "/api/v1/me/update",
+            "name", "/api/v1/me/name",
             "email", "/api/v1/me/email",
             "password", "/api/v1/me/password",
             "delete", "/api/v1/me/delete");
@@ -49,6 +53,7 @@ public final class AccountRoutes {
     public static void register(JavalinConfig config) {
         config.routes.get("/account/me", AccountRoutes::me);
         config.routes.post("/account/avatar", AccountRoutes::avatar);
+        config.routes.post("/account/badge-icon", AccountRoutes::badgeIcon);
         config.routes.post("/account/{action}", AccountRoutes::action);
     }
 
@@ -97,6 +102,54 @@ public final class AccountRoutes {
             ctx.json(body);
         } catch (ApiException e) {
             fail(ctx, e, "avatar");
+        }
+    }
+
+    /**
+     * The same path for the picture of a custom badge: bytes in, the answer of
+     * the API out, and the token never leaves this service. The API decides
+     * whether the account may have a badge at all and re-encodes the image.
+     */
+    private static void badgeIcon(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            deny(ctx);
+            return;
+        }
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+        if (!sameOrigin(ctx)) {
+            ctx.status(403).json(Map.of("status", "Cross-site badge uploads are not allowed."));
+            return;
+        }
+
+        String contentType = ctx.contentType();
+        if (contentType == null || !contentType.equalsIgnoreCase("image/png")) {
+            ctx.status(415).json(Map.of("status", "The badge picture must be a PNG image."));
+            return;
+        }
+
+        long declared = ctx.contentLength();
+        if (declared <= 0 || declared > MAX_BADGE_BYTES) {
+            ctx.status(413).json(Map.of("status", "The badge picture is too large (2 MB maximum)."));
+            return;
+        }
+
+        byte[] image = ctx.bodyAsBytes();
+        if (image.length == 0 || image.length > MAX_BADGE_BYTES) {
+            ctx.status(413).json(Map.of("status", "The badge picture is too large (2 MB maximum)."));
+            return;
+        }
+
+        try {
+            JsonNode body = App.api.requestBytes("POST", "/api/v1/me/badge", image,
+                    "image/png", session.getTokens().getAccessToken());
+            ctx.header("Cache-Control", "private, no-store");
+            ctx.json(body);
+        } catch (ApiException e) {
+            fail(ctx, e, "badge");
         }
     }
 
