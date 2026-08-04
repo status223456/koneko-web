@@ -68,6 +68,9 @@ public final class AdminRoutes {
             Map.entry("privileges-add", "/api/v1/admin/privileges/add"),
             Map.entry("privileges-remove", "/api/v1/admin/privileges/remove"),
             Map.entry("name", "/api/v1/admin/user/name"),
+            // Answers with a reset ticket rather than changing anything. The API keeps it
+            // behind the developer privilege; the coarse gate here is unchanged on purpose.
+            Map.entry("password-reset", "/api/v1/admin/user/password-reset"),
             Map.entry("country", "/api/v1/admin/user/country"),
             Map.entry("alert", "/api/v1/admin/alert"),
             Map.entry("beatmap-status", "/api/v1/admin/beatmap/status"),

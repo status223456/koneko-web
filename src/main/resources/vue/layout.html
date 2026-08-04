@@ -155,6 +155,51 @@
                 }
             },
             /**
+             * A player endpoint, asked through this service rather than
+             * straight from the API.
+             *
+             * A profile is the one kind of page data that does not answer
+             * everybody the same: a restricted account is a 404 to players and
+             * an ordinary profile to staff, and only the access token in the
+             * session here can tell the API which of the two is asking. So the
+             * cookie is sent, this service adds the token, and the answer is
+             * the API's own body and status.
+             */
+            async playerApi(endpoint, params) {
+                const query = new URLSearchParams();
+
+                Object.keys(params || {}).forEach(name => {
+                    const value = params[name];
+
+                    if (value === null || value === undefined || value === "") return;
+
+                    query.set(name, String(value));
+                });
+
+                const suffix = query.toString() ? "?" + query.toString() : "";
+
+                const response = await fetch("/data/player/" + endpoint + suffix, {
+                    headers: { "Accept": "application/json" },
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    const error = new Error(endpoint + " answered " + response.status);
+                    error.status = response.status;
+                    throw error;
+                }
+
+                return await response.json();
+            },
+            // The same call, with a failure giving null instead of throwing.
+            async playerApiQuietly(endpoint, params) {
+                try {
+                    return await this.playerApi(endpoint, params);
+                } catch (e) {
+                    return null;
+                }
+            },
+            /**
              * A call to this service instead of the API: the account routes,
              * which need the access token that lives in the session here. The
              * cookie is sent, the token is never seen by the browser, and the

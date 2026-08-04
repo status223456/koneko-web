@@ -504,7 +504,7 @@ app.component("profile-view", {
 
                 if (kind !== "first") params.scope = kind;
 
-                const answer = await this.apiQuietly(endpoint, params);
+                const answer = await this.playerApiQuietly(endpoint, params);
                 const page = (answer && answer.results) || [];
 
                 this.listOf(kind).push(...page);
@@ -574,7 +574,10 @@ app.component("profile-view", {
          */
         async loadHeader(run, who) {
             try {
-                const details = await this.api("get_player_details",
+                // Through this service rather than straight from the API: the
+                // session's token goes with the call, which is what lets staff
+                // open a profile the public is answered 404 for.
+                const details = await this.playerApi("get_player_details",
                     Object.assign({}, who, { scope: "all" }));
 
                 if (run !== this.generation) return;
@@ -616,7 +619,7 @@ app.component("profile-view", {
          * the page untouched.
          */
         async loadSection(run, name, part, endpoint, params, apply) {
-            const answer = await this.apiQuietly(endpoint, params);
+            const answer = await this.playerApiQuietly(endpoint, params);
 
             // A mode switch while this was in flight makes the answer
             // stale, so it is dropped rather than painted.

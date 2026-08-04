@@ -80,6 +80,9 @@
                         Rename
                     </button>
 
+                    <button class="button button-small" v-if="can('password-reset')"
+                        @click="act('password-reset')">Reset password</button>
+
                     <button class="button button-small" v-if="can('privileges')"
                         @click="act('privileges-add')">Add privilege</button>
 
@@ -88,6 +91,31 @@
 
                     <button class="button button-small button-danger" v-if="can('wipe')"
                         @click="act('wipe')">Wipe</button>
+                </div>
+
+                <!-- Shown once, here, right after the link is minted: it is not stored
+                     anywhere this page can read it back, so a staff member who navigates
+                     away has to issue a new one. -->
+                <div class="admin-reset-link" v-if="resetLink">
+                    <p class="small">
+                        <strong>Password reset link for {{ player.name }}.</strong>
+                        Send it to them over a channel you trust and nowhere else: anyone
+                        who has it can set this account's password.
+                    </p>
+
+                    <p class="admin-reset-row">
+                        <input class="admin-reset-input" type="text" :value="resetLink" readonly
+                            @focus="$event.target.select()">
+                        <button class="button button-small button-ghost" @click="copyResetLink">
+                            {{ resetCopied ? "Copied" : "Copy" }}
+                        </button>
+                    </p>
+
+                    <p class="muted small">
+                        Valid until {{ fmtDate(resetExpires * 1000) }}
+                        ({{ fmtRelative(resetExpires * 1000) }}), and only once.
+                        Issuing another link cancels this one.
+                    </p>
                 </div>
             </section>
 
@@ -194,7 +222,12 @@
             stats: [],
             dialog: null,
             dialogBusy: false,
-            dialogError: ""
+            dialogError: "",
+            // The last reset link issued from this page. Kept in memory only: the API
+            // never hands a ticket out twice, so there is nothing to come back to.
+            resetLink: "",
+            resetExpires: 0,
+            resetCopied: false
         }),
         computed: {
             avatar() {
@@ -411,6 +444,31 @@
                     };
                 }
 
+                if (action === "password-reset") {
+                    return {
+                        title: "Reset the password of " + who,
+                        text: "This does not change the password. It makes a one time link that"
+                            + " lets " + who + " choose a new one, and cancels any earlier link."
+                            + " Make sure you know who you are talking to before you send it,"
+                            + " and never set a password on their behalf.",
+                        confirm: "Create link",
+                        fields: [{
+                            key: "expires_in_hours",
+                            label: "Valid for",
+                            type: "select",
+                            value: 24,
+                            options: [
+                                { value: 1, label: "1 hour" },
+                                { value: 6, label: "6 hours" },
+                                { value: 24, label: "24 hours" },
+                                { value: 72, label: "3 days" },
+                                { value: 168, label: "7 days" }
+                            ],
+                            hint: "Shorter is safer. The link stops working after it is used."
+                        }]
+                    };
+                }
+
                 return { title: "Confirm", confirm: "Confirm", fields: [] };
             },
             async runAction(values) {
@@ -419,14 +477,29 @@
                 const body = Object.assign({ user_id: this.userId }, values);
 
                 if (body.mode !== undefined) body.mode = Number(body.mode);
+                if (body.expires_in_hours !== undefined) {
+                    body.expires_in_hours = Number(body.expires_in_hours);
+                }
 
                 this.dialogBusy = true;
                 this.dialogError = "";
 
                 try {
-                    await this.session("POST", "/admin/api/" + this.dialog.action, body);
+                    const action = this.dialog.action;
+                    const answer = await this.session("POST", "/admin/api/" + action, body);
 
                     this.dialog = null;
+
+                    // A reset link is the one action whose answer matters to the person who
+                    // asked for it, so it is kept and shown instead of being thrown away.
+                    if (action === "password-reset") {
+                        const issued = (answer && answer.body) || {};
+
+                        this.resetLink = window.location.origin
+                            + (issued.path || ("/reset-password?token=" + issued.token));
+                        this.resetExpires = issued.expires_at || 0;
+                        this.resetCopied = false;
+                    }
 
                     // The history has just gained a line, so the page is reloaded
                     // rather than patched: the new line is the point.
@@ -436,6 +509,16 @@
                     this.dialogError = e.message || "That could not be done.";
                 } finally {
                     this.dialogBusy = false;
+                }
+            },
+            async copyResetLink() {
+                try {
+                    await navigator.clipboard.writeText(this.resetLink);
+                    this.resetCopied = true;
+                } catch (e) {
+                    // No clipboard permission, or an insecure origin. The field next to the
+                    // button is selectable, so there is nothing to recover from.
+                    this.resetCopied = false;
                 }
             },
             closeDialog() {

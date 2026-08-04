@@ -1,6 +1,10 @@
 package com.osuserverlist.koneko.routes;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import com.osuserverlist.koneko.App;
+import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.auth.Auth;
 import com.osuserverlist.koneko.auth.UserSession;
 import com.osuserverlist.koneko.auth.Verification;
@@ -41,11 +45,15 @@ public final class ViewRoutes {
 
         config.routes.get(Verification.PATH, ctx -> verify(ctx, verifyPage));
 
-        config.routes.get("/u/{identifier}", page("profile-view"));
+        config.routes.get("/u/{identifier}", profilePage());
         config.routes.get("/leaderboard", page("leaderboard-view"));
         // Open to everybody, including an account that is restricted: it is
         // the page that explains what a restriction is.
         config.routes.get("/restrictions", KonekoVue.component("restrictions-view"));
+        // Redeeming a password reset link staff handed out. Ungated for the same reason the
+        // login form is: whoever opens it cannot log in, which is why they were given a link.
+        config.routes.get("/reset-password", KonekoVue.component("reset-password-view"));
+
         config.routes.get("/beatmaps", page("beatmaps-view"));
         config.routes.get("/beatmapsets/{setId}", page("beatmapset-view"));
         // Not in the navigation: reached through the search box in the bar.
@@ -110,6 +118,72 @@ public final class ViewRoutes {
 
             rendered.handle(ctx);
         };
+    }
+
+    /**
+     * A profile.
+     *
+     * <p>A restricted account is hidden from the whole public site, its own page included, so
+     * this asks the API whether the account behind the address may be shown to whoever is
+     * asking before rendering anything. When it may not, the not-found page is served with a
+     * real {@code 404} rather than a profile that would fill itself with errors, and the answer
+     * is the same one an address nobody ever registered gets: nothing here says whether the
+     * account exists.
+     *
+     * <p>Staff are the exception, and they get the page. The decision is the API's; this only
+     * carries the session's token over to it, because the browser has no token of its own.
+     */
+    private static Handler profilePage() {
+        Handler page = KonekoVue.component("profile-view");
+        Handler missing = KonekoVue.component("not-found-view", 404);
+
+        return ctx -> {
+            if (Verification.blocksPage(ctx)) {
+                return;
+            }
+
+            if (visibleProfile(ctx, ctx.pathParam("identifier"))) {
+                page.handle(ctx);
+                return;
+            }
+
+            missing.handle(ctx);
+        };
+    }
+
+    /**
+     * Whether the API is willing to describe this player to this visitor.
+     *
+     * <p>Only a {@code 404} is taken as an answer about the account. Anything else means the
+     * API is having a bad moment, and a page that would have rendered is not turned into a
+     * not-found because of it: the profile is served and its own error handling takes over.
+     */
+    private static boolean visibleProfile(Context ctx, String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return false;
+        }
+
+        Map<String, String> query = new LinkedHashMap<>();
+
+        // A numeric segment is an id, anything else a name, the way the API expects it.
+        query.put(identifier.matches("[0-9]+") ? "id" : "name", identifier);
+        // Only asking whether it may be seen at all; the page fetches the rest itself.
+        query.put("scope", "info");
+
+        UserSession session = Auth.current(ctx);
+
+        try {
+            if (session == null) {
+                App.api.get("/api/v1/get_player_details", query);
+            } else {
+                App.api.getAuthed("/api/v1/get_player_details", query,
+                        session.getTokens().getAccessToken());
+            }
+
+            return true;
+        } catch (ApiException e) {
+            return e.getStatus() != 404;
+        }
     }
 
     /**
