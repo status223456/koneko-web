@@ -36,8 +36,11 @@ public final class AccountRoutes {
     /** Cropped 512px PNGs are normally below 1 MB; leave room for noisy images. */
     private static final int MAX_AVATAR_BYTES = 4 * 1024 * 1024;
 
-    /** A badge picture is shown at 16px, so it never needs to be a big file. */
+    /** A badge picture is shown at 48x24, so it never needs to be a big file. */
     private static final int MAX_BADGE_BYTES = 2 * 1024 * 1024;
+
+    /** A cover spans the whole profile card, so it is allowed as much as an avatar. */
+    private static final int MAX_BANNER_BYTES = 4 * 1024 * 1024;
 
     /** What the browser may post, and where it goes on the API. */
     private static final Map<String, String> ACTIONS = Map.of(
@@ -54,6 +57,7 @@ public final class AccountRoutes {
         config.routes.get("/account/me", AccountRoutes::me);
         config.routes.post("/account/avatar", AccountRoutes::avatar);
         config.routes.post("/account/badge-icon", AccountRoutes::badgeIcon);
+        config.routes.post("/account/banner", AccountRoutes::banner);
         config.routes.post("/account/{action}", AccountRoutes::action);
     }
 
@@ -150,6 +154,53 @@ public final class AccountRoutes {
             ctx.json(body);
         } catch (ApiException e) {
             fail(ctx, e, "badge");
+        }
+    }
+
+    /**
+     * And the same again for the profile cover. The API decides whether the
+     * account may have a banner at all, re-encodes the image and stores it.
+     */
+    private static void banner(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            deny(ctx);
+            return;
+        }
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+        if (!sameOrigin(ctx)) {
+            ctx.status(403).json(Map.of("status", "Cross-site banner uploads are not allowed."));
+            return;
+        }
+
+        String contentType = ctx.contentType();
+        if (contentType == null || !contentType.equalsIgnoreCase("image/png")) {
+            ctx.status(415).json(Map.of("status", "The banner must be a PNG image."));
+            return;
+        }
+
+        long declared = ctx.contentLength();
+        if (declared <= 0 || declared > MAX_BANNER_BYTES) {
+            ctx.status(413).json(Map.of("status", "The banner is too large (4 MB maximum)."));
+            return;
+        }
+
+        byte[] image = ctx.bodyAsBytes();
+        if (image.length == 0 || image.length > MAX_BANNER_BYTES) {
+            ctx.status(413).json(Map.of("status", "The banner is too large (4 MB maximum)."));
+            return;
+        }
+
+        try {
+            JsonNode body = App.api.requestBytes("POST", "/api/v1/me/banner", image,
+                    "image/png", session.getTokens().getAccessToken());
+            ctx.header("Cache-Control", "private, no-store");
+            ctx.json(body);
+        } catch (ApiException e) {
+            fail(ctx, e, "banner");
         }
     }
 

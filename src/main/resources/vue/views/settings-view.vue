@@ -96,12 +96,19 @@
                     <div class="avatar-editor-head">
                         <div>
                             <h3 id="avatar-editor-title">
-                                {{ avatarEditor.target === "badge" ? "Crop badge picture" : "Crop profile picture" }}
+                                {{ avatarEditor.target === "badge" ? "Crop badge picture"
+                                    : (avatarEditor.target === "banner" ? "Crop profile banner"
+                                        : "Crop profile picture") }}
                             </h3>
                             <p class="muted small">
                                 Drag a region, or move and resize it by its corners.
                                 <template v-if="avatarEditor.target === 'badge'">
-                                    The badge keeps the shape you pick and is shown 16px tall.
+                                    The badge is a wide plate, so the middle of your
+                                    selection is kept at twice as wide as it is tall.
+                                </template>
+                                <template v-else-if="avatarEditor.target === 'banner'">
+                                    The banner is a wide strip, so the middle of your
+                                    selection is kept at four times as wide as it is tall.
                                 </template>
                             </p>
                         </div>
@@ -186,6 +193,38 @@
                                 Change username
                             </button>
                         </form>
+
+                        <hr class="settings-split">
+
+                        <!-- The cover shown at the top of your profile. -->
+                        <div class="stack">
+                            <input ref="bannerInput" class="avatar-input" type="file" hidden
+                                accept="image/png,image/jpeg" @change="openBannerEditor">
+
+                            <div class="field">
+                                <span class="field-label">Profile banner</span>
+                                <span class="field-hint muted small">
+                                    The picture at the top of your profile. PNG or JPEG,
+                                    up to 4 MB; a wide image works best.
+                                </span>
+                            </div>
+
+                            <div class="banner-preview" v-if="bannerUrl">
+                                <img :src="bannerUrl" alt="">
+                            </div>
+
+                            <div class="settings-actions">
+                                <button class="button" type="button"
+                                    :disabled="busy || bannerUploading || !donor" @click="chooseBanner">
+                                    {{ bannerUploading ? "Uploading…" : (bannerPath ? "Replace banner" : "Upload banner") }}
+                                </button>
+                                <button class="button button-ghost" type="button"
+                                    :disabled="busy || bannerUploading || !donor || !bannerPath"
+                                    @click="clearBanner">
+                                    Remove banner
+                                </button>
+                            </div>
+                        </div>
 
                         <hr class="settings-split">
 
@@ -352,6 +391,11 @@
             badgeIcon: "",
             badgeVersion: 0,
             badgeUploading: false,
+            // Same idea for the profile cover: uploaded, so the page only keeps
+            // the path the server answered with.
+            bannerPath: "",
+            bannerVersion: 0,
+            bannerUploading: false,
             email: { email: "", current_password: "" },
             password: { new_password: "", current_password: "" },
             passwordRepeat: "",
@@ -415,6 +459,13 @@
                 return this.badgeVersion
                     ? this.badgeIcon + "?v=" + this.badgeVersion
                     : this.badgeIcon;
+            },
+            bannerUrl() {
+                if (!this.bannerPath) return "";
+
+                return this.bannerVersion
+                    ? this.bannerPath + "?v=" + this.bannerVersion
+                    : this.bannerPath;
             },
             boxStyle() {
                 const crop = this.avatarEditor.crop;
@@ -480,6 +531,9 @@
             openBadgeEditor(event) {
                 this.openEditor(event, "badge");
             },
+            openBannerEditor(event) {
+                this.openEditor(event, "banner");
+            },
             /**
              * One cropper for both pictures. The target only decides how small a
              * source image may be, what the dialog says, and where the result is
@@ -500,9 +554,9 @@
                     return;
                 }
 
-                // A badge is shown at 16px, so it may come from a much smaller
-                // file than an avatar.
-                const minSide = target === "badge" ? 16 : 64;
+                // A badge is tiny, so it may come from a much smaller file than an
+                // avatar; a banner is drawn wide and needs a little more to work with.
+                const minSide = target === "badge" ? 16 : (target === "banner" ? 50 : 64);
 
                 const objectUrl = URL.createObjectURL(file);
                 const image = new Image();
@@ -663,9 +717,10 @@
             },
             // The dialog is shared, so its button asks the target where to post.
             saveCrop() {
-                return this.avatarEditor.target === "badge"
-                    ? this.saveBadgeCrop()
-                    : this.saveAvatar();
+                if (this.avatarEditor.target === "badge") return this.saveBadgeCrop();
+                if (this.avatarEditor.target === "banner") return this.saveBannerCrop();
+
+                return this.saveAvatar();
             },
             async saveAvatar() {
                 const source = this.sourceRect();
@@ -746,6 +801,7 @@
                         this.profile.preferred_mode = this.info.preferred_mode || 0;
                         this.badge.custom_badge_name = this.info.custom_badge_name || "";
                         this.badgeIcon = this.info.custom_badge_icon || "";
+                        this.bannerPath = this.info.custom_banner || "";
                         this.styleBits = this.playStyles
                             .filter(style => (this.info.play_style & style.bit) !== 0)
                             .map(style => style.bit);
@@ -884,6 +940,84 @@
                 } finally {
                     this.avatarEditor.saving = false;
                     this.badgeUploading = false;
+                }
+            },
+            chooseBanner() {
+                this.$refs.bannerInput.click();
+            },
+            /**
+             * Posts the selected region as the profile banner. Cropped to the wide
+             * strip a cover is drawn in, and scaled down, so the browser is not
+             * asked to upload a photo at full size for a 1600px wide band.
+             */
+            async saveBannerCrop() {
+                const source = this.sourceRect();
+
+                if (this.avatarEditor.saving || !source) return;
+
+                this.avatarEditor.saving = true;
+                this.avatarEditor.error = "";
+                this.bannerUploading = true;
+
+                try {
+                    // 4:1, the shape the profile draws the cover in, taken from the
+                    // middle of the selection so nothing is squashed.
+                    const cropW = Math.min(source.w, source.h * 4);
+                    const cropH = Math.max(1, Math.round(cropW / 4));
+                    const factor = cropW > 1600 ? 1600 / cropW : 1;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.max(1, Math.round(cropW * factor));
+                    canvas.height = Math.max(1, Math.round(cropH * factor));
+
+                    const context = canvas.getContext("2d");
+                    context.imageSmoothingEnabled = true;
+                    context.imageSmoothingQuality = "high";
+                    context.drawImage(this.avatarEditor.image,
+                        source.x + (source.w - cropW) / 2, source.y + (source.h - cropH) / 2,
+                        cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(value => value ? resolve(value)
+                            : reject(new Error("Could not prepare the image.")), "image/png");
+                    });
+
+                    const response = await fetch("/account/banner", {
+                        method: "POST",
+                        headers: { "Accept": "application/json", "Content-Type": "image/png" },
+                        credentials: "same-origin",
+                        body: blob
+                    });
+
+                    let answer = null;
+                    try { answer = await response.json(); } catch (ignored) {}
+
+                    if (!response.ok) {
+                        throw new Error((answer && (answer.status || answer.error_description))
+                            || "The banner could not be uploaded.");
+                    }
+
+                    this.bannerPath = (answer && answer.custom_banner) || this.bannerPath;
+                    this.bannerVersion = Date.now();
+                    this.info.custom_banner = this.bannerPath;
+
+                    this.notice = "Banner uploaded.";
+                    this.error = "";
+                    this.closeAvatarEditor();
+                } catch (e) {
+                    this.avatarEditor.error = e.message || "The banner could not be uploaded.";
+                } finally {
+                    this.avatarEditor.saving = false;
+                    this.bannerUploading = false;
+                }
+            },
+            /** Clearing it is a normal profile update; only uploading needs the file route. */
+            async clearBanner() {
+                const ok = await this.save("update", { custom_banner: null }, "Banner removed.");
+
+                if (ok) {
+                    this.bannerPath = "";
+                    this.bannerVersion = 0;
+                    this.info.custom_banner = null;
                 }
             },
             async saveBadge() {

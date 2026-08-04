@@ -324,28 +324,165 @@
     text-overflow: ellipsis;
 }
 
-/* The avatar and the badge form one column, so the badge can borrow the
-   picture's width and line up with both of its side edges. */
-.profile-avatar-col {
+/*
+ * The profile header, laid out the way the game does it: a cover strip, the
+ * avatar hanging over its bottom edge, the name and country under it, and the
+ * numbers split between a left column and a panel on the right.
+ *
+ * The base stylesheet gives .profile-top three grid columns for the old
+ * avatar / identity / facts row. That row no longer exists, so the grid is
+ * turned off here and each band gets its own padding instead.
+ */
+.profile-top {
+    display: block;
+    padding: 0;
+}
+
+.profile-cover {
+    /* 4:1, the shape uploads are stored in, so nothing is cropped twice. */
+    aspect-ratio: 4 / 1;
+    max-height: 260px;
+    background-color: var(--bg-soft);
+    /* Without a banner the strip is a flat gradient rather than an empty gap. */
+    background-image: linear-gradient(150deg, #26262c, #17171b 55%, #101013);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.profile-head {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    align-items: flex-end;
+    gap: 18px;
+    padding: 0 24px 18px;
+    /* Lifts the avatar so it overlaps the bottom of the cover. */
+    margin-top: -44px;
+}
+
+.profile-head .profile-avatar {
+    flex: 0 0 auto;
+}
+
+.profile-head .profile-identity {
     min-width: 0;
+    padding-bottom: 4px;
+}
+
+.profile-head .profile-name {
+    margin: 0 0 10px;
+}
+
+.profile-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.profile-country {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .02em;
 }
 
 .profile-badge {
-    /* Stretched to the column, which is exactly as wide as the avatar. */
-    display: flex;
-    width: 100%;
-    max-width: none;
+    /* Back to its own width now that it sits in a row beside the country. */
+    display: inline-flex;
+    width: auto;
+    max-width: 260px;
     box-sizing: border-box;
-    justify-content: flex-start;
-    padding: 5px 8px 5px 6px;
+    padding: 5px 12px 5px 6px;
 }
 
 .profile-badge .user-badge-name {
     min-width: 0;
+}
+
+.profile-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
+    gap: 24px;
+    align-items: start;
+    padding: 0 24px 24px;
+}
+
+.profile-left {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* Medals, pp and time played, the short row under the ranks. */
+.profile-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 30px;
+}
+
+.profile-quick-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.profile-quick-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+}
+
+.profile-quick-value {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* The stats list becomes the panel it is drawn as in the reference. */
+.profile-facts {
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+@media (max-width: 860px) {
+    .profile-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 620px) {
+    .profile-head {
+        margin-top: -32px;
+        gap: 14px;
+    }
+
+    .profile-cover {
+        aspect-ratio: 3 / 1;
+    }
+}
+
+/* The banner preview in Settings, shown in the same shape as the profile. */
+.banner-preview {
+    aspect-ratio: 4 / 1;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-soft);
+}
+
+.banner-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .badge-preview {
@@ -409,4 +546,84 @@
     font-weight: 600;
     letter-spacing: 0.02em;
     color: var(--text);
+}
+
+.card.profile-card {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.profile-card .profile-top {
+    display: block;
+    padding: 0 !important;
+    background: none !important;
+}
+
+.profile-card .profile-cover {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 1;
+    max-height: 260px;
+    margin: 0;
+    border-radius: 0;
+    background-color: var(--bg-soft);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+/* The line under the cover. Its own offset is gone: the avatar alone
+   carries it, so the name can no longer ride up onto the picture. */
+.profile-card .profile-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    margin: 0;
+    padding: 0 24px;
+}
+
+.profile-card .profile-avatar {
+    width: 128px;
+    height: 128px;
+    margin-top: -52px;
+    border: 3px solid var(--bg-panel);
+    border-radius: var(--radius-lg);
+    background: var(--bg-soft);
+    object-fit: cover;
+}
+
+.profile-card .profile-identity {
+    min-width: 0;
+    padding-bottom: 6px;
+}
+
+.profile-card .profile-name {
+    margin: 0;
+    line-height: 1.15;
+}
+
+.profile-card .profile-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.profile-card .profile-body {
+    padding: 20px 24px 24px;
+}
+
+@media (max-width: 620px) {
+    .profile-card .profile-head,
+    .profile-card .profile-body {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .profile-card .profile-avatar {
+        width: 96px;
+        height: 96px;
+        margin-top: -36px;
+    }
 }

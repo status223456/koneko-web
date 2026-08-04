@@ -88,6 +88,11 @@ public final class App {
                 ctx.status(500).result("Internal Server Error");
             });
 
+            // Javalin answers 413 for anything over 1 MB by default, which a
+            // cropped banner passes easily. The upload routes check their own,
+            // smaller limits, so this only has to clear the largest of them.
+            config.http.maxRequestSize = 8L * 1024 * 1024;
+
             ViewRoutes.register(config);
             AuthRoutes.register(config);
             DataRoutes.register(config);
