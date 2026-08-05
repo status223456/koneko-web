@@ -289,6 +289,101 @@
             </section>
 
             <section class="card">
+                <h3>Two-factor authentication</h3>
+
+                <!-- Already on: the only thing left to offer is taking it off again. -->
+                <template v-if="twoFactor.enabled">
+                    <p class="muted small">
+                        On. Logging in from a computer this account has not been used on before
+                        opens a page in your browser asking for a code from your app; the game
+                        lets you in once you have entered it.
+                    </p>
+
+                    <form class="stack" @submit.prevent="disableTwoFactor">
+                        <label class="field">
+                            <span class="field-label">Current password</span>
+                            <input class="filter-input" type="password"
+                                v-model="twoFactor.current_password"
+                                autocomplete="current-password" required>
+                        </label>
+
+                        <p class="error" v-if="twoFactor.error">{{ twoFactor.error }}</p>
+                        <p class="muted small" v-if="twoFactor.notice">{{ twoFactor.notice }}</p>
+
+                        <button class="button button-danger" type="submit" :disabled="twoFactor.busy">
+                            Turn off
+                        </button>
+                    </form>
+                </template>
+
+                <!-- Being set up: the code is asked for before anything is stored, so an app
+                     that never got the secret cannot lock the account out of the game. -->
+                <template v-else-if="twoFactor.setup">
+                    <p class="muted small">
+                        Scan this with Google Authenticator, Aegis, or any other authenticator
+                        app, then type the six digits it shows to finish.
+                    </p>
+
+                    <div class="totp-setup">
+                        <div class="totp-qr">
+                            <img v-if="qrSource()" :src="qrSource()" alt="Setup QR code"
+                                width="180" height="180">
+                            <p class="muted small" v-else>
+                                The QR code is unavailable. Enter the secret beside it by hand
+                                instead - it is the same thing.
+                            </p>
+                        </div>
+
+                        <div class="totp-manual">
+                            <span class="field-label">Or enter it by hand</span>
+                            <code class="totp-secret">{{ twoFactor.setup.secret_formatted }}</code>
+                            <p class="muted small">
+                                Time based, six digits, thirty seconds. The account name is
+                                {{ info.name }}.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form class="stack" @submit.prevent="confirmTwoFactor">
+                        <label class="field">
+                            <span class="field-label">Code from your app</span>
+                            <input class="filter-input code-input" type="text" v-model="twoFactor.code"
+                                inputmode="numeric" autocomplete="one-time-code" maxlength="7"
+                                placeholder="000000" required>
+                        </label>
+
+                        <p class="error" v-if="twoFactor.error">{{ twoFactor.error }}</p>
+
+                        <div class="row-buttons">
+                            <button class="button" type="submit" :disabled="twoFactor.busy">
+                                Turn on
+                            </button>
+
+                            <button class="button button-ghost" type="button"
+                                :disabled="twoFactor.busy" @click="cancelTwoFactor">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </template>
+
+                <template v-else>
+                    <p class="muted small">
+                        Off. With it on, a login from an unfamiliar computer needs a code from
+                        an authenticator app on your phone as well as your password.
+                    </p>
+
+                    <p class="error" v-if="twoFactor.error">{{ twoFactor.error }}</p>
+                    <p class="muted small" v-if="twoFactor.notice">{{ twoFactor.notice }}</p>
+
+                    <button class="button" type="button" :disabled="twoFactor.busy"
+                        @click="startTwoFactor">
+                        Set up
+                    </button>
+                </template>
+            </section>
+
+            <section class="card">
                 <h3>Password</h3>
                 <p class="muted small">
                     Changing it signs you out here and everywhere else, the game client
@@ -397,6 +492,17 @@
             bannerVersion: 0,
             bannerUploading: false,
             email: { email: "", current_password: "" },
+            // Two factor authentication. The secret only lives here while it is being set up;
+            // once confirmed the server keeps it and the browser has no use for it.
+            twoFactor: {
+                enabled: false,
+                busy: false,
+                error: "",
+                notice: "",
+                setup: null,
+                code: "",
+                current_password: ""
+            },
             password: { new_password: "", current_password: "" },
             passwordRepeat: "",
             remove: { current_password: "" },
@@ -1058,6 +1164,111 @@
                     this.info.custom_badge_icon = null;
                 }
             },
+            /**
+             * Reads whether an authenticator is set up. Failures are swallowed: a session that
+             * has expired is already reported by the card above, and this section simply shows
+             * its "off" state rather than a second copy of the same complaint.
+             */
+            async loadTwoFactor() {
+                try {
+                    const answer = await this.session("GET", "/account/2fa");
+
+                    this.twoFactor.enabled = !!(answer && answer.enabled);
+                } catch (e) {
+                    this.twoFactor.enabled = false;
+                }
+            },
+            /**
+             * Asks for a secret to scan. Nothing changes on the account yet - the secret waits
+             * on the server until a code proves the app really has it.
+             */
+            async startTwoFactor() {
+                if (this.twoFactor.busy) return;
+
+                this.twoFactor.busy = true;
+                this.twoFactor.error = "";
+                this.twoFactor.notice = "";
+
+                try {
+                    const answer = await this.session("POST", "/account/2fa", { action: "setup" });
+
+                    this.twoFactor.setup = (answer && answer.body) || null;
+                    this.twoFactor.code = "";
+                } catch (e) {
+                    this.twoFactor.error = e.message;
+                } finally {
+                    this.twoFactor.busy = false;
+                }
+            },
+            /**
+             * The QR code as an image source.
+             *
+             * The picture itself is drawn by the server and arrives as SVG markup, so there is
+             * nothing to fetch and nothing to compute here - it is wrapped in a data URI and
+             * handed to an <img>. Inlined rather than dropped into the document as markup so the
+             * browser treats it as an image and not as part of the page.
+             */
+            qrSource() {
+                const svg = this.twoFactor.setup && this.twoFactor.setup.qr_svg;
+
+                if (!svg) return "";
+
+                return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+            },
+            /** Drops a setup that was never confirmed; the server forgets it on its own too. */
+            cancelTwoFactor() {
+                this.twoFactor.setup = null;
+                this.twoFactor.code = "";
+                this.twoFactor.error = "";
+            },
+            async confirmTwoFactor() {
+                if (this.twoFactor.busy) return;
+
+                const code = this.twoFactor.code.replace(/[^0-9]/g, "");
+
+                if (code.length !== 6) {
+                    this.twoFactor.error = "The code is six digits.";
+                    return;
+                }
+
+                this.twoFactor.busy = true;
+                this.twoFactor.error = "";
+
+                try {
+                    await this.session("POST", "/account/2fa", { action: "enable", code: code });
+
+                    // The secret has no business staying in a browser tab once it is in the app.
+                    this.twoFactor.setup = null;
+                    this.twoFactor.code = "";
+                    this.twoFactor.enabled = true;
+                    this.twoFactor.notice = "Two-factor authentication is on.";
+                } catch (e) {
+                    this.twoFactor.error = e.message;
+                } finally {
+                    this.twoFactor.busy = false;
+                }
+            },
+            async disableTwoFactor() {
+                if (this.twoFactor.busy) return;
+
+                this.twoFactor.busy = true;
+                this.twoFactor.error = "";
+
+                try {
+                    await this.session("POST", "/account/2fa", {
+                        action: "disable",
+                        current_password: this.twoFactor.current_password
+                    });
+
+                    this.twoFactor.enabled = false;
+                    this.twoFactor.current_password = "";
+                    this.twoFactor.notice = "Two-factor authentication is off.";
+                } catch (e) {
+                    this.twoFactor.error = e.message;
+                } finally {
+                    this.twoFactor.busy = false;
+                }
+            },
             async changePassword() {
                 if (this.password.new_password !== this.passwordRepeat) {
                     this.error = "The two new passwords are not the same.";
@@ -1083,6 +1294,7 @@
         created() {
             this.setTitle("Settings");
             this.load();
+            this.loadTwoFactor();
         },
         mounted() {
             // Escape and a window resize both have to reach the dialog, and

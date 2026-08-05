@@ -48,13 +48,17 @@ public final class AccountRoutes {
             "name", "/api/v1/me/name",
             "email", "/api/v1/me/email",
             "password", "/api/v1/me/password",
-            "delete", "/api/v1/me/delete");
+            "delete", "/api/v1/me/delete",
+            // Setting up, confirming and removing an authenticator. Which of the three a call
+            // means is in the body, so one action covers all of it.
+            "2fa", "/api/v1/me/2fa");
 
     private AccountRoutes() {
     }
 
     public static void register(JavalinConfig config) {
         config.routes.get("/account/me", AccountRoutes::me);
+        config.routes.get("/account/2fa", AccountRoutes::twoFactor);
         config.routes.post("/account/avatar", AccountRoutes::avatar);
         config.routes.post("/account/badge-icon", AccountRoutes::badgeIcon);
         config.routes.post("/account/banner", AccountRoutes::banner);
@@ -250,6 +254,35 @@ public final class AccountRoutes {
             ctx.json(body);
         } catch (ApiException e) {
             fail(ctx, e, "me");
+        }
+    }
+
+    /**
+     * Whether the account has an authenticator set up.
+     *
+     * <p>Separate from {@link #me(Context)} because it is read again after every step of the
+     * setup, and reloading the whole account for one boolean would be wasteful.
+     */
+    private static void twoFactor(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            deny(ctx);
+            return;
+        }
+
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+
+        try {
+            JsonNode body = App.api.getAuthed("/api/v1/me/2fa", Map.of(),
+                    session.getTokens().getAccessToken());
+
+            ctx.header("Cache-Control", "private, no-store");
+            ctx.json(body);
+        } catch (ApiException e) {
+            fail(ctx, e, "2fa");
         }
     }
 

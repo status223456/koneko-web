@@ -6,6 +6,7 @@ import java.util.Map;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.auth.Auth;
+import com.osuserverlist.koneko.auth.StaffTwoFactor;
 import com.osuserverlist.koneko.auth.UserSession;
 import com.osuserverlist.koneko.auth.Verification;
 import com.osuserverlist.koneko.vue.KonekoVue;
@@ -53,6 +54,11 @@ public final class ViewRoutes {
         // Redeeming a password reset link staff handed out. Ungated for the same reason the
         // login form is: whoever opens it cannot log in, which is why they were given a link.
         config.routes.get("/reset-password", KonekoVue.component("reset-password-view"));
+        // Where the game client sends a player whose account asks for a code: the client opens
+        // it by itself and the person looking at it is, by definition, not logged in anywhere -
+        // so this one is ungated too. The client hash in the address is what identifies the
+        // login being answered, and a code from the authenticator is what settles it.
+        config.routes.get("/verify-client", KonekoVue.component("verify-client-view"));
 
         config.routes.get("/beatmaps", page("beatmaps-view"));
         config.routes.get("/beatmapsets/{setId}", page("beatmapset-view"));
@@ -95,6 +101,12 @@ public final class ViewRoutes {
         config.routes.get("/admin/moderation/{userId}", panel);
         config.routes.get("/admin/logs", panel);
         config.routes.get("/admin/server", panel);
+
+        // The staff gate, and the one panel address it does not guard - the same arrangement
+        // /verify has with the verification gate: this is the page that explains itself.
+        Handler staffGate = KonekoVue.component("admin-verify-view");
+
+        config.routes.get(StaffTwoFactor.PATH, ctx -> adminVerify(ctx, staffGate));
 
         // Unknown pages render inside the same shell instead of a bare Jetty
         // error page.
@@ -242,7 +254,46 @@ public final class ViewRoutes {
                 return;
             }
 
+            // The staff bits say who this account is; the code says it is really them at this
+            // browser. The panel wants both.
+            if (StaffTwoFactor.blocksPage(ctx, session)) {
+                return;
+            }
+
             page.handle(ctx);
         };
+    }
+
+    /**
+     * The staff gate.
+     *
+     * <p>Reachable only while it is needed, the way the verification page is: a visitor with no
+     * session goes to the login form, a player who is not staff goes home rather than being told
+     * a panel exists, and a session that has already answered a code is sent on to the panel so
+     * the page cannot be sat on as a dead end.
+     */
+    private static void adminVerify(Context ctx, Handler page) throws Exception {
+        UserSession session = Auth.current(ctx);
+
+        if (session == null) {
+            ctx.redirect("/login");
+            return;
+        }
+
+        if (Verification.blocksPage(ctx)) {
+            return;
+        }
+
+        if (!AdminRoutes.isStaff(session)) {
+            ctx.redirect("/");
+            return;
+        }
+
+        if (StaffTwoFactor.satisfied(session)) {
+            ctx.redirect("/admin");
+            return;
+        }
+
+        page.handle(ctx);
     }
 }

@@ -44,6 +44,23 @@ public final class UserSession {
     @Setter
     private volatile Instant lastVerificationCheck = Instant.EPOCH;
 
+    /**
+     * When this session last answered a code from the account's authenticator.
+     *
+     * <p>Only the staff panel asks for one. Kept per session rather than per account, because
+     * the point of asking is to establish something about this browser: another session of the
+     * same account has proved nothing about this one.
+     */
+    @Setter
+    private volatile Instant staffCodeAt = Instant.EPOCH;
+
+    /** Whether the account has an authenticator, as of {@link #lastTwoFactorCheck}. */
+    @Setter
+    private volatile boolean twoFactorEnabled;
+
+    @Setter
+    private volatile Instant lastTwoFactorCheck = Instant.EPOCH;
+
     @Setter
     private volatile TokenPair tokens;
 

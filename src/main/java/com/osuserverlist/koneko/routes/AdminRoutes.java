@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.osuserverlist.koneko.App;
 import com.osuserverlist.koneko.api.ApiException;
 import com.osuserverlist.koneko.auth.Auth;
+import com.osuserverlist.koneko.auth.StaffTwoFactor;
 import com.osuserverlist.koneko.auth.UserSession;
 import com.osuserverlist.koneko.auth.Verification;
 
@@ -32,6 +34,9 @@ import io.javalin.http.Context;
 public final class AdminRoutes {
 
     private static final Logger logger = LoggerFactory.getLogger("AdminRoutes");
+
+    /** Reads the one field the gate takes; the rest of what a browser posts there is ignored. */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     // The four staff bits, mirrored from the API's Privileges. Used only to decide
     // whether the panel opens and whether the navigation shows a link.
@@ -82,6 +87,8 @@ public final class AdminRoutes {
     public static void register(JavalinConfig config) {
         config.routes.get("/admin/api/{action}", AdminRoutes::read);
         config.routes.post("/admin/api/{action}", AdminRoutes::write);
+        // The gate itself, which is the one thing here that works before the gate is open.
+        config.routes.post(StaffTwoFactor.PATH, AdminRoutes::stepUp);
     }
 
     /**
@@ -113,6 +120,11 @@ public final class AdminRoutes {
 
         // Staff or not, an account that has never logged into the game is not usable yet.
         if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+
+        // Being staff is not enough: the session has to have answered a code as well.
+        if (StaffTwoFactor.blocksApi(ctx, session)) {
             return;
         }
 
@@ -150,6 +162,10 @@ public final class AdminRoutes {
             return;
         }
 
+        if (StaffTwoFactor.blocksApi(ctx, session)) {
+            return;
+        }
+
         try {
             JsonNode body = App.api.request("POST", path, null, ctx.body(),
                     "application/json", session.getTokens().getAccessToken());
@@ -166,6 +182,58 @@ public final class AdminRoutes {
             ctx.json(answer);
         } catch (ApiException e) {
             fail(ctx, e, action);
+        }
+    }
+
+    /**
+     * Answers the gate: takes a code from the authenticator and, if the API accepts it, opens
+     * the panel for this session.
+     *
+     * <p>The body is not forwarded as it arrived. The API endpoint behind this takes an action,
+     * and one of its actions removes the authenticator - so the code is pulled out and a new
+     * body is built around {@code verify} here. A route that passed the browser's own body on
+     * would be a route that lets a page turn 2FA off by asking nicely.
+     */
+    private static void stepUp(Context ctx) {
+        UserSession session = Auth.current(ctx);
+
+        if (!isStaff(session)) {
+            deny(ctx);
+            return;
+        }
+
+        if (Verification.blocksApi(ctx, session)) {
+            return;
+        }
+
+        String code;
+
+        try {
+            code = MAPPER.readTree(ctx.body()).path("code").asText("").replaceAll("[^0-9]", "");
+        } catch (Exception e) {
+            ctx.status(400).json(Map.of("status", "The code is six digits."));
+            return;
+        }
+
+        if (code.length() != 6) {
+            ctx.status(400).json(Map.of("status", "The code is six digits."));
+            return;
+        }
+
+        // Digits only by now, so there is nothing in it that could escape the quotes.
+        String body = "{\"action\":\"verify\",\"code\":\"" + code + "\"}";
+
+        try {
+            App.api.request("POST", "/api/v1/me/2fa", null, body,
+                    "application/json", session.getTokens().getAccessToken());
+
+            StaffTwoFactor.accept(session);
+
+            ctx.header("Cache-Control", "private, no-store");
+            ctx.json(Map.of("status", "success"));
+        } catch (ApiException e) {
+            // A wrong code is the caller's business; the API has already logged the attempt.
+            fail(ctx, e, "verify");
         }
     }
 

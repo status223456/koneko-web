@@ -4435,3 +4435,66 @@ body {
     align-items: center;
     margin: 16px 0 4px;
 }
+
+/* Two-factor setup: the QR code beside the secret it encodes, so an app that cannot
+   scan - or a phone that is not to hand - can still be set up by typing. */
+.totp-setup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-start;
+    margin: 14px 0 6px;
+}
+
+.totp-qr {
+    /* White regardless of the theme: a QR code on a dark background is not scannable. */
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 200px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.totp-qr img {
+    display: block;
+}
+
+.totp-manual {
+    flex: 1 1 220px;
+    min-width: 220px;
+}
+
+.totp-secret {
+    display: block;
+    margin: 6px 0 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 15px;
+    letter-spacing: 1px;
+    word-break: break-all;
+    /* Selectable in one gesture: it exists to be copied. */
+    user-select: all;
+}
+
+/* Six digits, spaced out and centred, so a mistyped one is easy to spot. */
+.code-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 20px;
+    letter-spacing: 6px;
+    text-align: center;
+    max-width: 220px;
+}
+
+.row-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
